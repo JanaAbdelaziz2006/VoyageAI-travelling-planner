@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, ConfigDict
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions"
 
 

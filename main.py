@@ -66,7 +66,7 @@ async def health():
         "success": True,
         "gemini_key_configured": bool(key),
         "gemini_key_prefix": key[:3] if key else None,
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
     }
 
 @app.post("/api/plan-trip")
