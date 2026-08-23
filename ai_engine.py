@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, ConfigDict
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions"
 
 
@@ -337,48 +337,6 @@ class TravelAIEngine:
     def _calculate_dates(start_date: str, nights: int) -> str:
         start = date.fromisoformat(start_date)
         return (start + timedelta(days=nights)).isoformat()
-
-    def check_transport(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        prompt = f"""
-You are a live travel transportation availability verifier for Turkey.
-
-Search the live public web NOW. Do not rely on memory.
-
-Route:
-- Origin: {data['origin']}
-- Destination: {data['destination']}
-- Date: {data['date']}
-- Adults: {data['adults_count']}
-- Children: {data['children_count']}
-- Requested mode: {data['transport_mode']}
-
-Rules:
-1. Determine whether the requested mode has a realistically bookable passenger service for this route/date.
-2. Search official operator sites first where possible (TCDD, airline, ferry operator, bus operator, etc.).
-3. If there is no service, set is_feasible=false. Do not invent one.
-4. Return exact provider names and a source URL only when found in live search results.
-5. If the requested mode can only work as a multi-leg journey, set is_feasible=true only if the complete journey is realistically feasible and explain the legs.
-6. Never substitute a different transport mode without saying so.
-7. Answer in JSON only.
-"""
-        schema = {
-            "type": "object",
-            "properties": {
-                "is_feasible": {"type": "boolean"},
-                "warning": {"type": "string"},
-                "carrier_summary": {"type": "string"},
-                "source_urls": {"type": "array", "items": {"type": "string"}},
-            },
-            "required": ["is_feasible", "warning", "carrier_summary", "source_urls"],
-        }
-        result = self._request_gemini(prompt, schema)
-        cited = {x["url"] for x in self._sources_from_result(result)}
-        urls = [u for u in result.get("source_urls", []) if u in cited]
-        result["source_urls"] = urls
-        if result.get("is_feasible") and not urls:
-            result["is_feasible"] = False
-            result["warning"] = "No citation-verified live source was found for this transport option."
-        return result
 
     @staticmethod
     def _sources_from_result(data: Dict[str, Any]) -> List[Dict[str, str]]:

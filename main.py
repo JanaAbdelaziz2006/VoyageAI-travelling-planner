@@ -41,15 +41,6 @@ class TripRequestPayload(BaseModel):
     language: str = "tr"
 
 
-class RouteCheckPayload(BaseModel):
-    origin: str = Field(min_length=2)
-    destination: str = Field(min_length=2)
-    transport_mode: str
-    date: str = Field(min_length=10)
-    adults_count: int = Field(default=2, ge=1, le=15)
-    children_count: int = Field(default=0, ge=0, le=8)
-    language: str = "en"
-
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -75,22 +66,8 @@ async def health():
         "success": True,
         "gemini_key_configured": bool(key),
         "gemini_key_prefix": key[:3] if key else None,
-        "model": os.getenv("GEMINI_MODEL", "gemini-3.7-flash"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     }
-
-
-@app.post("/api/check-transport")
-async def check_transport(payload: RouteCheckPayload):
-    try:
-        engine = TravelAIEngine()
-        result = engine.check_transport(payload.model_dump())
-        return JSONResponse(content={"success": True, "data": result})
-    except TravelAIError as exc:
-        return JSONResponse(status_code=502, content={"success": False, "error": str(exc)})
-    except Exception as exc:
-        traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "error": str(exc)})
-
 
 @app.post("/api/plan-trip")
 async def plan_trip(payload: TripRequestPayload):

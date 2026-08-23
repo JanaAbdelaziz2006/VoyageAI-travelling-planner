@@ -224,45 +224,6 @@ function collectPayload() {
   };
 }
 
-async function checkTransportLive() {
-  const mode = $("transport_mode").value;
-  const origin = $("origin").value;
-  const destination = $("destination").value;
-  const date = $("start_date").value;
-  if (!mode || origin === destination || !date) return;
-
-  const key = `${origin}|${destination}|${mode}|${date}`;
-  if (state.lastRouteCheckKey === key || state.checkingRoute) return;
-  state.checkingRoute = true;
-  state.lastRouteCheckKey = key;
-  const banner = $("routeStatus");
-  banner.className = "status loading";
-  banner.textContent = `${t().searching}`;
-
-  try {
-    const result = await api("/api/check-transport", {
-      origin,
-      destination,
-      transport_mode: mode,
-      date,
-      adults_count: Number($("adults_count").value || 2),
-      children_count: Number($("children_count").value || 0),
-      language: "en"
-    });
-    if (result.is_feasible) {
-      banner.className = "status success";
-      banner.textContent = result.carrier_summary || "Live transport option found.";
-    } else {
-      banner.className = "status warning";
-      banner.textContent = result.warning || t().unavailable;
-    }
-  } catch (err) {
-    banner.className = "status warning";
-    banner.textContent = "Live availability check could not be verified yet.";
-  } finally {
-    state.checkingRoute = false;
-  }
-}
 
 function renderWhy(why) {
   if (!why) return "";
@@ -406,19 +367,26 @@ async function submitSearch(e) {
 
 document.addEventListener("DOMContentLoaded", () => {
   fillCities();
+
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 7);
-  $("start_date").value = tomorrow.toISOString().slice(0,10);
-  $("start_date").min = new Date().toISOString().slice(0,10);
-  $("langSelector").addEventListener("change", e => { state.lang = e.target.value; applyLanguage(); });
-  $("tripForm").addEventListener("submit", submitSearch);
-  ["origin","destination","start_date","transport_mode"].forEach(id => $(id).addEventListener("change", () => {
-    state.lastRouteCheckKey = "";
-    checkTransportLive();
-  }));
-  $("children_count").addEventListener("input", () => {
-    $("childAgeWrap").classList.toggle("hidden", Number($("children_count").value || 0) === 0);
+
+  $("start_date").value = tomorrow.toISOString().slice(0, 10);
+  $("start_date").min = new Date().toISOString().slice(0, 10);
+
+  $("langSelector").addEventListener("change", e => {
+    state.lang = e.target.value;
+    applyLanguage();
   });
+
+  $("tripForm").addEventListener("submit", submitSearch);
+
+  $("children_count").addEventListener("input", () => {
+    $("childAgeWrap").classList.toggle(
+      "hidden",
+      Number($("children_count").value || 0) === 0
+    );
+  });
+
   applyLanguage();
-  checkTransportLive();
 });
