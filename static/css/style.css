@@ -1,0 +1,156 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+.input {
+    width: 100%;
+    background: #020617;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    font-size: 0.82rem;
+    outline: none;
+}
+
+.input:focus {
+    border-color: #38bdf8;
+}
+
+.label {
+    display: block;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-bottom: 0.3rem;
+}
+
+.result-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 1.2rem;
+}
+
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #7dd3fc;
+    font-size: 0.72rem;
+    text-decoration: none;
+}
+
+.source-chip:hover {
+    background: #1e293b;
+}
+
+.card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.day-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.item-card {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
+    padding: 0.8rem;
+    margin-top: 0.55rem;
+}
+
+.transport-grid,
+.timeline {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.transport-grid > div,
+.timeline > div {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 0.6rem;
+    padding: 0.65rem;
+}
+
+.muted {
+    color: #94a3b8;
+    font-size: 0.73rem;
+    margin-top: 0.25rem;
+}
+
+.verified {
+    color: #34d399;
+    font-size: 0.7rem;
+}
+
+.warning-box {
+    background: rgba(120, 53, 15, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #fde68a;
+    border-radius: 0.65rem;
+    padding: 0.7rem;
+    margin-top: 0.65rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.why {
+    background: rgba(14, 165, 233, 0.04);
+    border: 1px solid rgba(14, 165, 233, 0.12);
+    border-radius: 0.65rem;
+    padding: 0.65rem;
+    margin-top: 0.65rem;
+}
+
+.map-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: #fca5a5;
+    font-size: 0.72rem;
+}
+
+.toast {
+    position: fixed;
+    top: 5rem;
+    right: 1rem;
+    z-index: 1000;
+    max-width: 28rem;
+    background: #450a0a;
+    border: 1px solid #ef4444;
+    color: #fecaca;
+    border-radius: 0.75rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .transport-grid,
+    .timeline {
+        grid-template-columns: 1fr;
+    }
+}

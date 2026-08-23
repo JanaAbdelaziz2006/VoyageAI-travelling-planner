@@ -1,1063 +1,676 @@
 <!DOCTYPE html>
+<html lang="tr">
 
-<html lang="tr" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>VoyageAI Türkiye — Free Verified Travel Planner</title>
+    <meta charset="UTF-8">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  >
+    <title>VoyageAI — Travel Searcher</title>
 
-  <link
-    rel="stylesheet"
-    href="/static/css/style.css?v=5.0.0"
-  >
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    :root {
-      color-scheme: dark;
-    }
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
 
-    body {
-      background:
-        radial-gradient(
-          circle at top left,
-          rgba(14, 165, 233, 0.08),
-          transparent 35%
-        ),
-        radial-gradient(
-          circle at top right,
-          rgba(239, 68, 68, 0.06),
-          transparent 35%
-        ),
-        #020617;
-    }
-
-    .card {
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid rgba(51, 65, 85, 0.85);
-      border-radius: 1rem;
-      padding: 1.25rem;
-      box-shadow: 0 16px 40px rgba(0,0,0,.2);
-    }
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: .75rem;
-      color: #e2e8f0;
-      font-weight: 700;
-      font-size: .9rem;
-      margin-bottom: .75rem;
-    }
-
-    .verified {
-      color: #34d399;
-      font-size: .7rem;
-      border: 1px solid rgba(16,185,129,.25);
-      background: rgba(16,185,129,.08);
-      border-radius: 999px;
-      padding: .2rem .5rem;
-      white-space: nowrap;
-    }
-
-    .source-chip,
-    .map-link,
-    .primary-link {
-      display: inline-flex;
-      align-items: center;
-      gap: .35rem;
-      border-radius: .5rem;
-      padding: .45rem .65rem;
-      font-size: .72rem;
-      text-decoration: none;
-      transition: .2s;
-    }
-
-    .source-chip {
-      color: #7dd3fc;
-      background: rgba(15, 23, 42, .9);
-      border: 1px solid #334155;
-    }
-
-    .source-chip:hover {
-      background: #1e293b;
-    }
-
-    .primary-link {
-      color: #fbbf24;
-      background: rgba(120, 53, 15, .25);
-      border: 1px solid rgba(245,158,11,.25);
-    }
-
-    .map-link {
-      color: #fca5a5;
-      background: rgba(127,29,29,.2);
-      border: 1px solid rgba(248,113,113,.2);
-      margin-top: .5rem;
-    }
-
-    .link-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .5rem;
-      margin-top: .75rem;
-    }
-
-    .source-wrap {
-      border-top: 1px solid #1e293b;
-      margin-top: .9rem;
-      padding-top: .75rem;
-    }
-
-    .source-wrap small {
-      color: #94a3b8;
-      display: block;
-      margin-bottom: .4rem;
-    }
-
-    .chip,
-    .metric,
-    .meal-tag {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: .25rem .55rem;
-      font-size: .68rem;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #cbd5e1;
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .4rem;
-      margin-top: .75rem;
-    }
-
-    .hotel-meta,
-    .muted,
-    .address {
-      color: #94a3b8;
-      font-size: .76rem;
-      line-height: 1.5;
-      margin-top: .35rem;
-    }
-
-    .transport-grid,
-    .timeline {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: .6rem;
-      margin-top: .9rem;
-    }
-
-    .transport-grid > div,
-    .timeline > div {
-      background: rgba(2,6,23,.65);
-      border: 1px solid #1e293b;
-      border-radius: .7rem;
-      padding: .65rem;
-    }
-
-    .transport-grid small,
-    .timeline small {
-      display: block;
-      color: #64748b;
-      font-size: .65rem;
-      margin-bottom: .25rem;
-    }
-
-    .transport-grid strong,
-    .timeline strong {
-      color: #e2e8f0;
-      font-size: .8rem;
-    }
-
-    .route-text {
-      color: #cbd5e1;
-      font-size: .75rem;
-      margin-top: .75rem;
-    }
-
-    .why {
-      margin-top: .8rem;
-      padding: .7rem;
-      border-radius: .7rem;
-      background: rgba(14,165,233,.05);
-      border: 1px solid rgba(14,165,233,.15);
-    }
-
-    .why strong {
-      color: #7dd3fc;
-      font-size: .75rem;
-    }
-
-    .why p {
-      color: #cbd5e1;
-      font-size: .72rem;
-      line-height: 1.5;
-      margin-top: .3rem;
-    }
-
-    .why > div {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .35rem;
-      margin-top: .45rem;
-    }
-
-    .day-card {
-      background: rgba(15,23,42,.9);
-      border: 1px solid #334155;
-      border-radius: 1rem;
-      padding: 1rem;
-    }
-
-    .day-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: start;
-      margin-bottom: .85rem;
-    }
-
-    .day-head > div > span {
-      color: #38bdf8;
-      font-size: .68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-
-    .day-head h3 {
-      color: white;
-      font-size: 1rem;
-      font-weight: 800;
-      margin-top: .15rem;
-    }
-
-    .date-badge {
-      color: #cbd5e1;
-      background: #0f172a;
-      border: 1px solid #334155;
-      padding: .3rem .55rem;
-      border-radius: .5rem;
-      font-size: .7rem;
-      white-space: nowrap;
-    }
-
-    .banner {
-      padding: .7rem;
-      border-radius: .7rem;
-      color: #fde68a;
-      background: rgba(120,53,15,.18);
-      border: 1px solid rgba(245,158,11,.18);
-      font-size: .73rem;
-      margin-bottom: .75rem;
-    }
-
-    .items {
-      display: grid;
-      gap: .6rem;
-      margin-top: .6rem;
-    }
-
-    .item-card {
-      background: rgba(2,6,23,.55);
-      border: 1px solid #1e293b;
-      border-radius: .8rem;
-      padding: .8rem;
-    }
-
-    .item-top {
-      display: flex;
-      align-items: center;
-      gap: .55rem;
-      flex-wrap: wrap;
-    }
-
-    .item-top strong {
-      color: #f8fafc;
-      font-size: .8rem;
-    }
-
-    .time {
-      color: #7dd3fc;
-      background: rgba(14,165,233,.08);
-      border: 1px solid rgba(14,165,233,.18);
-      border-radius: .45rem;
-      padding: .2rem .45rem;
-      font-size: .65rem;
-    }
-
-    .meal-tag {
-      color: #fcd34d;
-      border-color: rgba(245,158,11,.2);
-      background: rgba(120,53,15,.16);
-    }
-
-    .warning-box {
-      background: rgba(120,53,15,.18);
-      border: 1px solid rgba(245,158,11,.25);
-      color: #fde68a;
-      border-radius: .7rem;
-      padding: .7rem;
-      font-size: .72rem;
-      line-height: 1.5;
-      margin-top: .75rem;
-    }
-
-    .empty {
-      text-align: center;
-      color: #94a3b8;
-      padding: 1.2rem;
-      font-size: .8rem;
-    }
-
-    .status {
-      border-radius: .6rem;
-      padding: .6rem .75rem;
-      font-size: .72rem;
-      line-height: 1.4;
-      margin-top: .65rem;
-    }
-
-    .status.loading {
-      background: rgba(14,116,144,.15);
-      border: 1px solid rgba(14,165,233,.25);
-      color: #7dd3fc;
-    }
-
-    .toast {
-      position: fixed;
-      right: 1rem;
-      top: 5.5rem;
-      z-index: 100;
-      max-width: 28rem;
-      background: #450a0a;
-      border: 1px solid rgba(248,113,113,.45);
-      color: #fecaca;
-      border-radius: .8rem;
-      padding: .8rem 1rem;
-      box-shadow: 0 20px 50px rgba(0,0,0,.35);
-      font-size: .75rem;
-    }
-
-    [dir="rtl"] .fa-arrow-right {
-      transform: rotate(180deg);
-    }
-  </style>
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css?v=6.0.0"
+    >
 
 </head>
 
-<body class="min-h-screen text-slate-100">
 
-  <!-- HEADER -->
-
-  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-
-```
-  <div class="flex items-center gap-3">
-
-    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-sky-500 flex items-center justify-center">
-      <i class="fa-solid fa-compass text-white text-xl"></i>
-    </div>
-
-    <div>
-      <h1 class="text-xl font-black bg-gradient-to-r from-red-400 to-sky-400 bg-clip-text text-transparent"
-          data-i18n="title">
-        VoyageAI Türkiye
-      </h1>
-
-      <p class="text-xs text-slate-400"
-         data-i18n="subtitle">
-        Ücretsiz doğrulanmış seyahat planı
-      </p>
-    </div>
-
-  </div>
-
-  <select
-    id="langSelector"
-    class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200"
-  >
-    <option value="tr">Türkçe 🇹🇷</option>
-    <option value="en">English 🇬🇧</option>
-    <option value="ar">العربية 🇸🇦</option>
-  </select>
-
-</div>
-```
-
-  </header>
-
-  <!-- MAIN -->
-
-  <main class="max-w-7xl mx-auto w-full px-4 py-6">
-
-```
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<body class="bg-slate-950 text-white min-h-screen">
 
 
-  <!-- LEFT FORM -->
-  <section class="lg:col-span-4">
+<header class="border-b border-slate-800 bg-slate-900">
 
-    <form
-      id="tripForm"
-      class="card space-y-4"
-    >
-
-      <div class="section-title">
-        <span>
-          <i class="fa-solid fa-sliders mr-2 text-sky-400"></i>
-          Travel Parameters
-        </span>
-      </div>
-
-
-      <!-- ORIGIN DESTINATION -->
-      <div class="grid grid-cols-2 gap-3">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
 
         <div>
-          <label
-            class="block text-xs text-slate-400 mb-1"
-            data-i18n="origin"
-          >
-            Kalkış
-          </label>
 
-          <select
-            id="origin"
-            required
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs"
-          ></select>
+            <h1 class="text-2xl font-black text-sky-400">
+                VoyageAI
+            </h1>
+
+            <p class="text-xs text-slate-400">
+                Real travel search and ranking
+            </p>
+
         </div>
 
-        <div>
-          <label
-            class="block text-xs text-slate-400 mb-1"
-            data-i18n="destination"
-          >
-            Varış
-          </label>
-
-          <select
-            id="destination"
-            required
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs"
-          ></select>
-        </div>
-
-      </div>
-
-
-      <!-- DATE -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="date"
-        >
-          Gidiş tarihi
-        </label>
-
-        <input
-          type="date"
-          id="start_date"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-
-      </div>
-
-
-      <!-- TRAVELERS -->
-      <div class="grid grid-cols-4 gap-2">
-
-        <div>
-          <label
-            class="block text-[11px] text-slate-400 mb-1"
-            data-i18n="adults"
-          >
-            Yetişkin
-          </label>
-
-          <input
-            id="adults_count"
-            type="number"
-            min="1"
-            max="15"
-            value="2"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-center"
-          >
-        </div>
-
-
-        <div>
-          <label
-            class="block text-[11px] text-slate-400 mb-1"
-            data-i18n="children"
-          >
-            Çocuk
-          </label>
-
-          <input
-            id="children_count"
-            type="number"
-            min="0"
-            max="8"
-            value="0"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-center"
-          >
-        </div>
-
-
-        <div>
-          <label
-            class="block text-[11px] text-slate-400 mb-1"
-            data-i18n="rooms"
-          >
-            Oda
-          </label>
-
-          <select
-            id="rooms_count"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-1 py-2 text-xs text-center"
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
-        </div>
-
-
-        <div>
-          <label
-            class="block text-[11px] text-slate-400 mb-1"
-            data-i18n="nights"
-          >
-            Gece
-          </label>
-
-          <input
-            id="nights"
-            type="number"
-            min="1"
-            max="30"
-            value="3"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-center"
-          >
-        </div>
-
-      </div>
-
-
-      <!-- CHILD AGE -->
-      <div id="childAgeWrap" class="hidden">
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="childAge"
-        >
-          Çocuk yaşı
-        </label>
-
-        <input
-          id="child_age"
-          type="number"
-          min="0"
-          max="17"
-          value="10"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-
-      </div>
-
-
-      <!-- TRANSPORT -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="transport"
-        >
-          Ulaşım
-        </label>
 
         <select
-          id="transport_mode"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
+            id="langSelector"
+            class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
         >
 
-          <option value="Bus">
-            🚌 Bus
-          </option>
+            <option value="tr">
+                Türkçe
+            </option>
 
-          <option value="Plane">
-            ✈️ Plane
-          </option>
+            <option value="en">
+                English
+            </option>
 
-          <option value="Train">
-            🚆 Train
-          </option>
-
-          <option value="Own Car">
-            🚗 Own Car
-          </option>
-
-          <option value="Own EV">
-            ⚡ Own EV
-          </option>
-
-          <option value="Passenger Ferry">
-            ⛴️ Passenger Ferry
-          </option>
-
-          <option value="Car Ferry">
-            🚢 Car Ferry
-          </option>
+            <option value="ar">
+                العربية
+            </option>
 
         </select>
 
-      </div>
-
-
-      <!-- BUDGET -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="budget"
-        >
-          Bütçe
-        </label>
-
-        <select
-          id="budget_mode"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="cheapest_best">
-            🔥 Best + Cheapest
-          </option>
-
-          <option value="custom">
-            💰 Budget Limit
-          </option>
-        </select>
-
-      </div>
-
-
-      <div>
-
-        <input
-          id="budget_amount_try"
-          type="number"
-          min="1"
-          placeholder="Budget in TRY"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-
-      </div>
-
-
-      <!-- HOTEL RATING -->
-      <div>
-
-        <div class="flex justify-between mb-1">
-
-          <label
-            class="text-xs text-slate-400"
-            data-i18n="minRating"
-          >
-            Min. hotel rating
-          </label>
-
-          <span
-            id="ratingValue"
-            class="text-xs text-amber-400"
-          >
-            8.0
-          </span>
-
-        </div>
-
-        <input
-          id="hotel_min_rating"
-          type="range"
-          min="0"
-          max="10"
-          step="0.1"
-          value="8"
-          class="w-full"
-        >
-
-      </div>
-
-
-      <!-- HOTEL LOCATION -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="location"
-        >
-          Otel konumu
-        </label>
-
-        <select
-          id="hotel_location"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-
-          <option value="city_center">
-            City center / historical area
-          </option>
-
-          <option value="near_sea">
-            Seaside / beachfront
-          </option>
-
-          <option value="nature">
-            Nature / mountain
-          </option>
-
-          <option value="quiet">
-            Quiet area
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- AMENITIES -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-2"
-          data-i18n="amenities"
-        >
-          Required amenities
-        </label>
-
-        <div class="grid grid-cols-2 gap-2 text-xs">
-
-          <label class="flex gap-2 items-center bg-slate-950 border border-slate-800 rounded-lg p-2">
-            <input
-              type="checkbox"
-              name="amenity"
-              value="beach"
-            >
-            🏖️ Beach
-          </label>
-
-          <label class="flex gap-2 items-center bg-slate-950 border border-slate-800 rounded-lg p-2">
-            <input
-              type="checkbox"
-              name="amenity"
-              value="aquapark"
-            >
-            🌊 Aquapark
-          </label>
-
-          <label class="flex gap-2 items-center bg-slate-950 border border-slate-800 rounded-lg p-2">
-            <input
-              type="checkbox"
-              name="amenity"
-              value="pool"
-              checked
-            >
-            🏊 Pool
-          </label>
-
-          <label class="flex gap-2 items-center bg-slate-950 border border-slate-800 rounded-lg p-2">
-            <input
-              type="checkbox"
-              name="amenity"
-              value="spa"
-              checked
-            >
-            🧖 Spa
-          </label>
-
-        </div>
-
-      </div>
-
-
-      <!-- MEAL PLAN -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="meal"
-        >
-          Meal plan
-        </label>
-
-        <select
-          id="meal_board"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        >
-
-          <option value="breakfast_only">
-            Bed & Breakfast
-          </option>
-
-          <option value="no_meals">
-            Room Only
-          </option>
-
-          <option value="halfboard">
-            Half Board
-          </option>
-
-          <option value="fullboard">
-            Full Board
-          </option>
-
-          <option value="allinclusive">
-            All Inclusive
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- NOTES -->
-      <div>
-
-        <label
-          class="block text-xs text-slate-400 mb-1"
-          data-i18n="notes"
-        >
-          Special notes
-        </label>
-
-        <textarea
-          id="special_notes"
-          rows="3"
-          placeholder="Family trip, local food, accessibility, etc."
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
-        ></textarea>
-
-      </div>
-
-
-      <!-- SUBMIT -->
-      <button
-        id="searchBtn"
-        type="submit"
-        class="w-full bg-gradient-to-r from-red-600 to-sky-500 hover:from-red-500 hover:to-sky-400 text-white font-bold rounded-xl py-3 transition"
-      >
-        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
-
-        <span data-i18n="search">
-          Ara & Planla
-        </span>
-
-      </button>
-
-    </form>
-
-  </section>
-
-
-  <!-- RIGHT RESULTS -->
-  <section class="lg:col-span-8 space-y-5">
-
-
-    <!-- EMPTY -->
-    <div
-      id="emptyState"
-      class="card text-center py-16"
-    >
-
-      <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-2xl text-sky-400 mb-4">
-        <i class="fa-solid fa-map-location-dot"></i>
-      </div>
-
-      <h2 class="text-lg font-bold text-slate-200">
-        VoyageAI
-      </h2>
-
-      <p
-        class="text-sm text-slate-400 mt-2"
-        data-i18n="noData"
-      >
-        Sonuç görmek için arama yapın.
-      </p>
-
     </div>
 
-
-    <!-- LOADING -->
-    <div
-      id="loading"
-      class="hidden card text-center py-12"
-    >
-
-      <div class="text-sky-400 text-3xl mb-4">
-        <i class="fa-solid fa-circle-notch fa-spin"></i>
-      </div>
-
-      <h3
-        class="font-bold"
-        data-i18n="searching"
-      >
-        Veriler hazırlanıyor...
-      </h3>
-
-      <p class="text-xs text-slate-500 mt-2">
-        OpenStreetMap candidates are being collected,
-        then one Gemini request ranks and organizes them.
-      </p>
-
-    </div>
+</header>
 
 
-    <!-- RESULTS -->
-    <div
-      id="results"
-      class="hidden space-y-5"
-    >
+<main class="max-w-7xl mx-auto p-4">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
 
-      <!-- SUMMARY -->
-      <section class="card">
+        <!-- FORM -->
 
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <section class="lg:col-span-4">
 
-          <div>
+            <form
+                id="tripForm"
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4"
+            >
+
+                <h2
+                    class="font-bold text-lg"
+                    data-i18n="title"
+                >
+                    VoyageAI
+                </h2>
+
+
+                <div class="grid grid-cols-2 gap-3">
+
+                    <div>
+
+                        <label
+                            class="text-xs text-slate-400"
+                        >
+                            Departure
+                        </label>
+
+                        <select
+                            id="origin"
+                            required
+                            class="input"
+                        ></select>
+
+                    </div>
+
+
+                    <div>
+
+                        <label
+                            class="text-xs text-slate-400"
+                        >
+                            Destination
+                        </label>
+
+                        <select
+                            id="destination"
+                            required
+                            class="input"
+                        ></select>
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Start date
+                    </label>
+
+                    <input
+                        id="start_date"
+                        type="date"
+                        required
+                        class="input"
+                    >
+
+                </div>
+
+
+                <div class="grid grid-cols-4 gap-2">
+
+                    <div>
+
+                        <label class="label">
+                            Adults
+                        </label>
+
+                        <input
+                            id="adults_count"
+                            type="number"
+                            value="2"
+                            min="1"
+                            max="15"
+                            class="input"
+                        >
+
+                    </div>
+
+
+                    <div>
+
+                        <label class="label">
+                            Children
+                        </label>
+
+                        <input
+                            id="children_count"
+                            type="number"
+                            value="0"
+                            min="0"
+                            max="8"
+                            class="input"
+                        >
+
+                    </div>
+
+
+                    <div>
+
+                        <label class="label">
+                            Rooms
+                        </label>
+
+                        <select
+                            id="rooms_count"
+                            class="input"
+                        >
+
+                            <option value="1">
+                                1
+                            </option>
+
+                            <option value="2">
+                                2
+                            </option>
+
+                            <option value="3">
+                                3
+                            </option>
+
+                            <option value="4">
+                                4
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div>
+
+                        <label class="label">
+                            Nights
+                        </label>
+
+                        <input
+                            id="nights"
+                            type="number"
+                            value="3"
+                            min="1"
+                            max="20"
+                            class="input"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="childAgeWrap"
+                    class="hidden"
+                >
+
+                    <label class="label">
+                        Child age
+                    </label>
+
+                    <input
+                        id="child_age"
+                        type="number"
+                        value="10"
+                        min="0"
+                        max="17"
+                        class="input"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Transport
+                    </label>
+
+                    <select
+                        id="transport_mode"
+                        class="input"
+                    >
+
+                        <option value="Bus">
+                            Bus
+                        </option>
+
+                        <option value="Plane">
+                            Plane
+                        </option>
+
+                        <option value="Train">
+                            Train
+                        </option>
+
+                        <option value="Passenger Ferry">
+                            Passenger Ferry
+                        </option>
+
+                        <option value="Car Ferry">
+                            Car Ferry
+                        </option>
+
+                        <option value="Own Car">
+                            Own Car
+                        </option>
+
+                        <option value="Own EV">
+                            Own EV
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Budget
+                    </label>
+
+                    <select
+                        id="budget_mode"
+                        class="input"
+                    >
+
+                        <option value="cheapest_best">
+                            Best + Cheapest
+                        </option>
+
+                        <option value="custom">
+                            Custom budget
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <input
+                        id="budget_amount_try"
+                        type="number"
+                        placeholder="Budget TRY"
+                        class="input"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Minimum hotel rating
+                    </label>
+
+                    <input
+                        id="hotel_min_rating"
+                        type="number"
+                        value="8"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        class="input"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Hotel location
+                    </label>
+
+                    <select
+                        id="hotel_location"
+                        class="input"
+                    >
+
+                        <option value="city_center">
+                            City center
+                        </option>
+
+                        <option value="near_sea">
+                            Near sea
+                        </option>
+
+                        <option value="nature">
+                            Nature / mountain
+                        </option>
+
+                        <option value="quiet">
+                            Quiet area
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Hotel amenities
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="amenity"
+                                value="pool"
+                                checked
+                            >
+                            Pool
+                        </label>
+
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="amenity"
+                                value="spa"
+                                checked
+                            >
+                            Spa
+                        </label>
+
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="amenity"
+                                value="beach"
+                            >
+                            Beach
+                        </label>
+
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="amenity"
+                                value="aquapark"
+                            >
+                            Aquapark
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Meal plan
+                    </label>
+
+                    <select
+                        id="meal_board"
+                        class="input"
+                    >
+
+                        <option value="breakfast_only">
+                            Breakfast only
+                        </option>
+
+                        <option value="no_meals">
+                            Room only
+                        </option>
+
+                        <option value="halfboard">
+                            Half board
+                        </option>
+
+                        <option value="fullboard">
+                            Full board
+                        </option>
+
+                        <option value="allinclusive">
+                            All inclusive
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">
+                        Special notes
+                    </label>
+
+                    <textarea
+                        id="special_notes"
+                        rows="3"
+                        class="input"
+                        placeholder="Family trip, local food, etc."
+                    ></textarea>
+
+                </div>
+
+
+                <button
+                    id="searchBtn"
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-red-600 to-sky-500 rounded-xl py-3 font-bold"
+                >
+
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i>
+
+                    <span data-i18n="search">
+                        Search & Plan
+                    </span>
+
+                </button>
+
+
+            </form>
+
+        </section>
+
+
+        <!-- RESULTS -->
+
+        <section class="lg:col-span-8">
+
 
             <div
-              id="routeTitle"
-              class="text-xs uppercase tracking-wider text-sky-400 font-bold"
+                id="emptyState"
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center"
             >
-              Bursa → İstanbul
+
+                <div class="text-5xl text-sky-400 mb-4">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+
+                <h2 class="text-xl font-bold">
+                    VoyageAI
+                </h2>
+
+                <p
+                    class="text-sm text-slate-400 mt-2"
+                    data-i18n="noData"
+                >
+                    Search to see results.
+                </p>
+
             </div>
 
-            <h2 class="text-2xl font-black text-white">
-              VoyageAI Travel Plan
-            </h2>
 
             <div
-              id="dateTitle"
-              class="text-xs text-slate-400 mt-1"
+                id="loading"
+                class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center"
             >
-              —
+
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-sky-400"></i>
+
+                <p
+                    class="mt-4"
+                    data-i18n="searching"
+                >
+                    Searching...
+                </p>
+
             </div>
 
-          </div>
-
-          <div class="text-right">
-
-            <span class="text-xs text-slate-500">
-              Estimated verified total
-            </span>
 
             <div
-              id="costTitle"
-              class="text-2xl font-black text-emerald-400"
+                id="results"
+                class="hidden space-y-5"
             >
-              —
+
+
+                <section class="result-card">
+
+                    <div class="flex justify-between">
+
+                        <div>
+
+                            <p
+                                id="routeTitle"
+                                class="text-sky-400 text-xs font-bold"
+                            >
+                                Bursa → İstanbul
+                            </p>
+
+                            <h2 class="text-2xl font-black">
+                                Travel Plan
+                            </h2>
+
+                            <p
+                                id="dateTitle"
+                                class="text-xs text-slate-400 mt-1"
+                            >
+                                —
+                            </p>
+
+                        </div>
+
+
+                        <div class="text-right">
+
+                            <p class="text-xs text-slate-500">
+                                Total
+                            </p>
+
+                            <p
+                                id="costTitle"
+                                class="text-2xl font-bold text-emerald-400"
+                            >
+                                —
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <div
+                    id="resultWarnings"
+                    class="space-y-2"
+                ></div>
+
+
+                <div id="hotelArea"></div>
+
+
+                <div id="transportArea"></div>
+
+
+                <section>
+
+                    <h2
+                        class="text-lg font-bold mb-3"
+                        data-i18n="daily"
+                    >
+                        Daily plan
+                    </h2>
+
+                    <div
+                        id="daysArea"
+                        class="space-y-4"
+                    ></div>
+
+                </section>
+
+
+                <section
+                    id="departureArea"
+                ></section>
+
+
+                <section class="result-card">
+
+                    <h2 class="font-bold mb-3">
+                        <span data-i18n="sources">
+                            Sources
+                        </span>
+                    </h2>
+
+                    <div
+                        id="sourcesArea"
+                        class="flex flex-wrap gap-2"
+                    ></div>
+
+                </section>
+
             </div>
 
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- WARNINGS -->
-      <section
-        id="resultWarnings"
-        class="space-y-2"
-      ></section>
-
-
-      <!-- HOTEL -->
-      <div id="hotelArea"></div>
-
-
-      <!-- TRANSPORT -->
-      <div id="transportArea"></div>
-
-
-      <!-- DAILY -->
-      <section>
-
-        <div class="section-title px-1">
-          <span>
-            <i class="fa-solid fa-calendar-days mr-2 text-sky-400"></i>
-            <span data-i18n="daily">
-              Günlük plan
-            </span>
-          </span>
-        </div>
-
-        <div
-          id="daysArea"
-          class="space-y-4"
-        ></div>
-
-      </section>
-
-
-      <!-- RETURN -->
-      <section
-        id="departureArea"
-      ></section>
-
-
-      <!-- SOURCES -->
-      <section class="card">
-
-        <div class="section-title">
-          <span>
-            <i class="fa-solid fa-link mr-2 text-emerald-400"></i>
-            <span data-i18n="sources">
-              Doğrulanmış kaynaklar
-            </span>
-          </span>
-        </div>
-
-        <div
-          id="sourcesArea"
-          class="link-row"
-        ></div>
-
-      </section>
-
+        </section>
 
     </div>
 
-  </section>
+</main>
 
-</div>
-```
 
-  </main>
-
-  <!-- JS -->
-
-  <script
-    src="/static/js/app.js?v=5.0.0"
-  ></script>
+<script
+    src="/static/js/app.js?v=6.0.0"
+></script>
 
 </body>
 </html>
