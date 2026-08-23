@@ -1,18 +1,36 @@
 import json
 import os
-from datetime import date, datetime, timedelta
+import time
+from dataclasses import dataclass
+from datetime import date, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 import requests
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, ValidationError, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+BASE_DIR = Path(__file__).resolve().parent
+CACHE_DIR = BASE_DIR / ".cache"
+CACHE_DIR.mkdir(exist_ok=True)
+load_dotenv(BASE_DIR / ".env")
 
+# FREE MODE:
+# - One Gemini request per trip search
+# - No Google Search grounding
+# - Real public data comes from OpenStreetMap / Overpass
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip()
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions"
+
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
+
+APP_USER_AGENT = os.getenv(
+    "APP_USER_AGENT",
+    "VoyageAI/5.0 (local travel-planner prototype; contact=developer@example.com)",
+)
 
 
 class TravelAIError(Exception):
@@ -21,13 +39,15 @@ class TravelAIError(Exception):
 
 class Source(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    title: str = ""
+
+    title: str = "OpenStreetMap"
     url: str
-    type: str = "web"
+    type: str = "osm"
 
 
 class BookingLink(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     provider_name: str
     url: str
     kind: str = "source"
@@ -36,6 +56,7 @@ class BookingLink(BaseModel):
 
 class WhyReason(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     title: str = ""
     explanation: str = ""
     score_metrics: List[str] = Field(default_factory=list)
@@ -43,6 +64,8 @@ class WhyReason(BaseModel):
 
 class HotelItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
+    candidate_id: str = ""
     name: str
     stars: Optional[int] = None
     aggregated_rating_10: Optional[float] = None
@@ -61,14 +84,17 @@ class HotelItem(BaseModel):
     sources: List[Source] = Field(default_factory=list)
     why: WhyReason = Field(default_factory=WhyReason)
     verified: bool = False
+    price_verified: bool = False
 
 
 class TransportItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     mode: str
     is_feasible: bool = False
     feasibility_warning: Optional[str] = None
     carrier_summary: str = ""
+    candidate_id: str = ""
     departure_time: str = ""
     arrival_time: str = ""
     origin_terminal: str = ""
@@ -81,10 +107,13 @@ class TransportItem(BaseModel):
     sources: List[Source] = Field(default_factory=list)
     why: WhyReason = Field(default_factory=WhyReason)
     verified: bool = False
+    price_verified: bool = False
 
 
 class ActivityItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
+    candidate_id: str = ""
     time_slot: str
     place_name: str
     category: str = ""
@@ -103,6 +132,8 @@ class ActivityItem(BaseModel):
 
 class RestaurantItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
+    candidate_id: str = ""
     meal_type: str
     restaurant_name: str
     cuisine: str = ""
@@ -119,6 +150,7 @@ class RestaurantItem(BaseModel):
 
 class DayPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     day_number: int
     calendar_date: str
     day_title: str
@@ -131,6 +163,7 @@ class DayPlan(BaseModel):
 
 class DepartureDayBuffer(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     departure_mode: str
     checkout_time: str = "12:00"
     lunch_spot_near_hub: Optional[RestaurantItem] = None
@@ -148,6 +181,7 @@ class DepartureDayBuffer(BaseModel):
 
 class TripCostBreakdown(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     hotel_total_try: Optional[float] = None
     transport_total_try: Optional[float] = None
     food_budget_total_try: Optional[float] = None
@@ -157,6 +191,7 @@ class TripCostBreakdown(BaseModel):
 
 class TripPlanResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     destination_city: str
     origin_city: str
     adults_count: int
@@ -176,26 +211,520 @@ class TripPlanResponse(BaseModel):
     data_warnings: List[str] = Field(default_factory=list)
 
 
-class TravelAIEngine:
+@dataclass
+class CityGeo:
+    display_name: str
+    lat: float
+    lon: float
+
+
+def _safe_cache_name(prefix: str, value: str) -> Path:
+    import hashlib
+
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
+    return CACHE_DIR / f"{prefix}_{digest}.json"
+
+
+def _read_cache(
+    path: Path,
+    max_age_seconds: int = 86400,
+) -> Optional[Dict[str, Any]]:
+    try:
+        if time.time() - path.stat().st_mtime > max_age_seconds:
+            return None
+
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    except Exception:
+        return None
+
+
+def _write_cache(path: Path, data: Any) -> None:
+    try:
+        path.write_text(
+            json.dumps(data, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+
+
+class FreeDataLayer:
     def __init__(self):
-        self.gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-        if not self.gemini_key or self.gemini_key == "PASTE_YOUR_NEW_KEY_HERE":
-            raise TravelAIError(
-                "Gemini API key is not configured. Put your NEW key in .env as GEMINI_API_KEY=..."
+        self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "User-Agent": APP_USER_AGENT,
+            }
+        )
+
+    def geocode_city(self, city: str) -> CityGeo:
+        cache_path = _safe_cache_name(
+            "geo",
+            city.casefold().strip(),
+        )
+
+        cached = _read_cache(
+            cache_path,
+            max_age_seconds=7 * 86400,
+        )
+
+        if cached:
+            return CityGeo(**cached)
+
+        try:
+            # Nominatim public service should not be hit faster than 1 req/sec.
+            time.sleep(1.05)
+
+            response = self.session.get(
+                NOMINATIM_URL,
+                params={
+                    "q": f"{city}, Turkey",
+                    "format": "jsonv2",
+                    "limit": 1,
+                    "countrycodes": "tr",
+                },
+                timeout=30,
             )
 
-    def _request_gemini(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+            response.raise_for_status()
+            rows = response.json()
+
+        except requests.RequestException as exc:
+            raise TravelAIError(
+                f"Could not geocode {city}: {exc}"
+            ) from exc
+
+        if not rows:
+            raise TravelAIError(
+                f"Could not locate {city} in Turkey using OpenStreetMap."
+            )
+
+        geo = CityGeo(
+            display_name=rows[0].get(
+                "display_name",
+                city,
+            ),
+            lat=float(rows[0]["lat"]),
+            lon=float(rows[0]["lon"]),
+        )
+
+        _write_cache(
+            cache_path,
+            geo.__dict__,
+        )
+
+        return geo
+
+    def overpass_candidates(
+        self,
+        city: str,
+        geo: CityGeo,
+    ) -> Dict[str, List[Dict[str, Any]]]:
+
+        cache_path = _safe_cache_name(
+            "overpass",
+            f"{city.casefold()}|{geo.lat:.4f}|{geo.lon:.4f}",
+        )
+
+        cached = _read_cache(
+            cache_path,
+            max_age_seconds=6 * 3600,
+        )
+
+        if cached:
+            return cached
+
+        query = f"""
+[out:json][timeout:35];
+(
+  nwr(around:18000,{geo.lat},{geo.lon})[tourism=hotel];
+  nwr(around:18000,{geo.lat},{geo.lon})[tourism=guest_house];
+  nwr(around:18000,{geo.lat},{geo.lon})[amenity=restaurant];
+  nwr(around:18000,{geo.lat},{geo.lon})[tourism=attraction];
+  nwr(around:18000,{geo.lat},{geo.lon})[historic];
+  nwr(around:18000,{geo.lat},{geo.lon})[amenity=bus_station];
+  nwr(around:18000,{geo.lat},{geo.lon})[amenity=ferry_terminal];
+  nwr(around:18000,{geo.lat},{geo.lon})[railway=station];
+);
+out center tags;
+"""
+
+        try:
+            response = self.session.post(
+                OVERPASS_URL,
+                data=query,
+                timeout=60,
+            )
+
+            if response.status_code == 429:
+                raise TravelAIError(
+                    "OpenStreetMap Overpass is temporarily busy. "
+                    "Please wait a little and retry."
+                )
+
+            response.raise_for_status()
+
+            elements = response.json().get(
+                "elements",
+                [],
+            )
+
+        except requests.RequestException as exc:
+            raise TravelAIError(
+                f"Could not query OpenStreetMap: {exc}"
+            ) from exc
+
+        result = {
+            "hotels": [],
+            "restaurants": [],
+            "places": [],
+            "transport": [],
+        }
+
+        seen: set[str] = set()
+
+        for element in elements:
+            tags = element.get("tags") or {}
+
+            center = element.get("center") or {}
+
+            lat = element.get(
+                "lat",
+                center.get("lat"),
+            )
+
+            lon = element.get(
+                "lon",
+                center.get("lon"),
+            )
+
+            name = (
+                tags.get("name") or ""
+            ).strip()
+
+            if not name or lat is None or lon is None:
+                continue
+
+            kind = str(
+                element.get("type", "n")
+            )
+
+            osm_id = (
+                f"{kind}{element.get('id')}"
+            )
+
+            if osm_id in seen:
+                continue
+
+            seen.add(osm_id)
+
+            record = {
+                "id": osm_id,
+                "name": name,
+                "lat": float(lat),
+                "lon": float(lon),
+                "address": ", ".join(
+                    x
+                    for x in [
+                        tags.get("addr:street"),
+                        tags.get("addr:housenumber"),
+                        tags.get("addr:city"),
+                    ]
+                    if x
+                ),
+                "website": (
+                    tags.get("website")
+                    or tags.get("contact:website")
+                    or ""
+                ),
+                "phone": (
+                    tags.get("phone")
+                    or tags.get("contact:phone")
+                    or ""
+                ),
+                "operator": (
+                    tags.get("operator")
+                    or tags.get("network")
+                    or ""
+                ),
+                "stars": self._to_int(
+                    tags.get("stars")
+                ),
+                "rating": self._to_float(
+                    tags.get("rating")
+                    or tags.get("stars:rating")
+                ),
+                "price": self._extract_price(tags),
+                "cuisine": tags.get(
+                    "cuisine",
+                    "",
+                ),
+                "opening_hours": tags.get(
+                    "opening_hours",
+                    "",
+                ),
+                "description": tags.get(
+                    "description",
+                    "",
+                ),
+                "amenities": [],
+                "osm_url": (
+                    f"https://www.openstreetmap.org/"
+                    f"{kind}/{element.get('id')}"
+                ),
+            }
+
+            for key in [
+                "swimming_pool",
+                "pool",
+                "spa",
+                "water_park",
+                "beach_resort",
+            ]:
+                if (
+                    key in tags
+                    or str(
+                        tags.get(
+                            "amenity",
+                            "",
+                        )
+                    ).casefold()
+                    == key
+                ):
+                    record["amenities"].append(key)
+
+            if tags.get("leisure") == "water_park":
+                record["amenities"].append(
+                    "aquapark"
+                )
+
+            if tags.get("tourism") in {
+                "hotel",
+                "guest_house",
+            }:
+                result["hotels"].append(
+                    record
+                )
+
+            elif tags.get("amenity") == "restaurant":
+                result["restaurants"].append(
+                    record
+                )
+
+            elif (
+                tags.get("tourism")
+                == "attraction"
+                or "historic" in tags
+            ):
+                result["places"].append(
+                    record
+                )
+
+            elif (
+                tags.get("amenity")
+                in {
+                    "bus_station",
+                    "ferry_terminal",
+                }
+                or tags.get("railway")
+                == "station"
+            ):
+                result["transport"].append(
+                    record
+                )
+
+        _write_cache(
+            cache_path,
+            result,
+        )
+
+        return result
+
+    @staticmethod
+    def _to_int(
+        value: Any,
+    ) -> Optional[int]:
+        try:
+            return int(float(value))
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return None
+
+    @staticmethod
+    def _to_float(
+        value: Any,
+    ) -> Optional[float]:
+        try:
+            return float(value)
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return None
+
+    @classmethod
+    def _extract_price(
+        cls,
+        tags: Dict[str, Any],
+    ) -> Optional[float]:
+
+        for key in (
+            "price",
+            "price_level",
+            "price_range",
+        ):
+            value = tags.get(key)
+
+            if value is None:
+                continue
+
+            if isinstance(
+                value,
+                (int, float),
+            ):
+                return float(value)
+
+            text = str(value).replace(
+                ",",
+                ".",
+            )
+
+            import re
+
+            match = re.search(
+                r"\d+(?:\.\d+)?",
+                text,
+            )
+
+            if match:
+                try:
+                    return float(
+                        match.group(0)
+                    )
+                except ValueError:
+                    pass
+
+        return None
+
+    def road_route(
+        self,
+        origin: CityGeo,
+        destination: CityGeo,
+    ) -> Dict[str, Any]:
+
+        key = (
+            f"{origin.lat:.5f},{origin.lon:.5f}"
+            f"|"
+            f"{destination.lat:.5f},{destination.lon:.5f}"
+        )
+
+        cache_path = _safe_cache_name(
+            "route",
+            key,
+        )
+
+        cached = _read_cache(
+            cache_path,
+            max_age_seconds=7 * 86400,
+        )
+
+        if cached:
+            return cached
+
+        try:
+            url = (
+                f"{OSRM_URL}/"
+                f"{origin.lon},{origin.lat};"
+                f"{destination.lon},{destination.lat}"
+            )
+
+            response = self.session.get(
+                url,
+                params={
+                    "overview": "false",
+                },
+                timeout=30,
+            )
+
+            response.raise_for_status()
+
+            body = response.json()
+
+        except requests.RequestException as exc:
+            raise TravelAIError(
+                f"Could not calculate the road route: {exc}"
+            ) from exc
+
+        routes = body.get(
+            "routes"
+        ) or []
+
+        if not routes:
+            raise TravelAIError(
+                "No road route was returned "
+                "for this origin/destination."
+            )
+
+        route = {
+            "distance_km": round(
+                routes[0]["distance"] / 1000,
+                1,
+            ),
+            "duration_min": round(
+                routes[0]["duration"] / 60
+            ),
+        }
+
+        _write_cache(
+            cache_path,
+            route,
+        )
+
+        return route
+
+
+class TravelAIEngine:
+
+    def __init__(self):
+        self.gemini_key = (
+            os.getenv(
+                "GEMINI_API_KEY",
+                "",
+            )
+            .strip()
+        )
+
+        if (
+            not self.gemini_key
+            or self.gemini_key
+            == "PASTE_YOUR_NEW_KEY_HERE"
+        ):
+            raise TravelAIError(
+                "Gemini API key is not configured. "
+                "Put your key in .env."
+            )
+
+        self.data = FreeDataLayer()
+
+    def _request_gemini(
+        self,
+        prompt: str,
+        schema: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
         payload = {
             "model": GEMINI_MODEL,
             "input": prompt,
-            "tools": [{"type": "google_search"}],
             "response_format": {
                 "type": "text",
                 "mime_type": "application/json",
                 "schema": schema,
             },
             "generation_config": {
-                "thinking_level": "medium",
+                "thinking_level": "low",
             },
         }
 
@@ -207,154 +736,945 @@ class TravelAIEngine:
                     "x-goog-api-key": self.gemini_key,
                 },
                 json=payload,
-                timeout=180,
+                timeout=150,
             )
+
         except requests.RequestException as exc:
-            raise TravelAIError(f"Could not reach Gemini API: {exc}") from exc
+            raise TravelAIError(
+                f"Could not reach Gemini API: {exc}"
+            ) from exc
+
+        if response.status_code == 429:
+            raise TravelAIError(
+                "Gemini Free Tier rate limit was reached. "
+                "This version uses one Gemini request per trip search. "
+                "Wait for the quota window to reset and try again."
+            )
 
         if response.status_code == 401:
             raise TravelAIError(
-                "Gemini returned 401 Unauthorized. The key is invalid, revoked, or not authorized for this API. "
-                "Create a fresh Gemini API key and put it in .env. The API uses the x-goog-api-key header."
+                "Gemini returned 401. "
+                "Check that the API key in .env is valid "
+                "and belongs to this project."
             )
+
+        if response.status_code == 404:
+            raise TravelAIError(
+                f"Gemini model '{GEMINI_MODEL}' is unavailable "
+                "for this project. Check GEMINI_MODEL in .env."
+            )
+
         if response.status_code >= 400:
             try:
                 detail = response.json()
             except Exception:
                 detail = response.text[:1000]
-            raise TravelAIError(f"Gemini API error {response.status_code}: {detail}")
+
+            raise TravelAIError(
+                f"Gemini API error "
+                f"{response.status_code}: {detail}"
+            )
 
         try:
             body = response.json()
-        except ValueError as exc:
-            raise TravelAIError("Gemini returned a non-JSON response.") from exc
 
-        text = self._extract_model_output_text(body)
+        except ValueError as exc:
+            raise TravelAIError(
+                "Gemini returned a non-JSON response."
+            ) from exc
+
+        text = self._extract_model_output_text(
+            body
+        )
+
         if not text:
-            raise TravelAIError("Gemini returned no model output.")
+            raise TravelAIError(
+                "Gemini returned no model output."
+            )
 
         try:
-            data = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise TravelAIError(f"Gemini returned invalid structured JSON: {exc}") from exc
+            return json.loads(text)
 
-        cited_urls = self._extract_citation_urls(body)
-        self._attach_verified_citations(data, cited_urls)
-        return data
+        except json.JSONDecodeError as exc:
+            raise TravelAIError(
+                f"Gemini returned invalid JSON: {exc}"
+            ) from exc
 
     @staticmethod
-    def _extract_model_output_text(body: Dict[str, Any]) -> str:
-        for step in reversed(body.get("steps", [])):
+    def _extract_model_output_text(
+        body: Dict[str, Any],
+    ) -> str:
+
+        for step in reversed(
+            body.get("steps", [])
+        ):
             if step.get("type") != "model_output":
                 continue
-            for block in step.get("content", []):
-                if block.get("type") == "text" and block.get("text"):
-                    return block["text"].strip()
+
+            for block in step.get(
+                "content",
+                [],
+            ):
+                if (
+                    block.get("type")
+                    == "text"
+                    and block.get("text")
+                ):
+                    return block[
+                        "text"
+                    ].strip()
+
+        for key in (
+            "output_text",
+            "text",
+        ):
+            if body.get(key):
+                return str(
+                    body[key]
+                ).strip()
+
         return ""
 
     @staticmethod
-    def _extract_citation_urls(body: Dict[str, Any]) -> List[Dict[str, str]]:
-        results: List[Dict[str, str]] = []
-        seen = set()
-        for step in body.get("steps", []):
-            if step.get("type") != "model_output":
-                continue
-            for block in step.get("content", []):
-                for annotation in block.get("annotations", []) or []:
-                    url = annotation.get("url")
-                    title = annotation.get("title") or annotation.get("name") or "Source"
-                    if url and url not in seen:
-                        seen.add(url)
-                        results.append({"url": url, "title": title})
-        return results
+    def _maps_search_url(
+        place: str,
+        city: str,
+    ) -> str:
 
-    def _attach_verified_citations(self, data: Dict[str, Any], cited_urls: List[Dict[str, str]]) -> None:
-        allowed = {x["url"]: x for x in cited_urls}
-        data["sources"] = [
-            {"url": x["url"], "title": x["title"], "type": "web"} for x in cited_urls
-        ]
-
-        def clean_link(link: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-            url = (link.get("url") or "").strip()
-            if url not in allowed:
-                return None
-            link["url"] = url
-            return link
-
-        hotel = data.get("hotel") or {}
-        hotel["booking_links"] = [
-            cleaned for link in hotel.get("booking_links", [])
-            if (cleaned := clean_link(link)) is not None
-        ]
-        hotel["sources"] = [
-            {"url": u["url"], "title": allowed[u["url"]]["title"], "type": "web"}
-            for u in hotel.get("sources", [])
-            if u.get("url") in allowed
-        ]
-        hotel["verified"] = bool(hotel.get("name")) and bool(hotel["sources"])
-        data["hotel"] = hotel
-
-        transportation = data.get("transportation") or {}
-        transportation["booking_links"] = [
-            cleaned for link in transportation.get("booking_links", [])
-            if (cleaned := clean_link(link)) is not None
-        ]
-        transportation["sources"] = [
-            {"url": u["url"], "title": allowed[u["url"]]["title"], "type": "web"}
-            for u in transportation.get("sources", [])
-            if u.get("url") in allowed
-        ]
-        transportation["verified"] = bool(transportation.get("sources")) and bool(
-            transportation.get("carrier_summary")
-        )
-        data["transportation"] = transportation
-
-        for day in data.get("daily_schedule", []):
-            for activity in day.get("activities", []):
-                activity["source_urls"] = [u for u in activity.get("source_urls", []) if u in allowed]
-                activity["map_url"] = self._maps_search_url(activity.get("place_name", ""), data.get("destination_city", ""))
-                activity["verified"] = bool(activity.get("place_name")) and bool(activity["source_urls"])
-            for restaurant in day.get("restaurants", []):
-                restaurant["source_urls"] = [u for u in restaurant.get("source_urls", []) if u in allowed]
-                restaurant["map_url"] = self._maps_search_url(restaurant.get("restaurant_name", ""), data.get("destination_city", ""))
-                restaurant["verified"] = bool(restaurant.get("restaurant_name")) and bool(restaurant["source_urls"])
-
-        data_warnings = list(data.get("data_warnings") or [])
-        if not hotel.get("verified"):
-            data_warnings.append("Hotel has no citation-verified source, so treat its details as unavailable.")
-        if not transportation.get("verified"):
-            data_warnings.append("Transportation has no citation-verified source, so treat its details as unavailable.")
-        data["data_warnings"] = list(dict.fromkeys(data_warnings))
-
-    @staticmethod
-    def _maps_search_url(place: str, city: str) -> str:
         if not place:
             return ""
-        query = quote(f"{place}, {city}")
-        return f"https://www.google.com/maps/search/?api=1&query={query}"
+
+        return (
+            "https://www.google.com/maps/search/"
+            "?api=1&query="
+            + quote(
+                place
+                + ", "
+                + city
+            )
+        )
 
     @staticmethod
-    def _calculate_dates(start_date: str, nights: int) -> str:
-        start = date.fromisoformat(start_date)
-        return (start + timedelta(days=nights)).isoformat()
+    def _calculate_dates(
+        start_date: str,
+        nights: int,
+    ) -> str:
 
-    @staticmethod
-    def _sources_from_result(data: Dict[str, Any]) -> List[Dict[str, str]]:
-        return list(data.get("sources") or [])
+        return (
+            date.fromisoformat(
+                start_date
+            )
+            + timedelta(
+                days=nights
+            )
+        ).isoformat()
 
-    def generate_plan(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        start_date = data["start_date"]
-        end_date = self._calculate_dates(start_date, int(data["nights"]))
-        language = {"tr": "Turkish", "en": "English", "ar": "Arabic"}.get(data.get("language"), "English")
+    def _candidate_pack(
+        self,
+        city: str,
+        geo: CityGeo,
+        candidates: Dict[str, List[Dict[str, Any]]],
+        data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        amenities = {
+            str(x).casefold()
+            for x in data.get(
+                "amenities",
+                [],
+            )
+        }
+
+        def hotel_score(
+            c: Dict[str, Any],
+        ) -> float:
+
+            score = 0.0
+
+            if c.get("stars"):
+                score += min(
+                    c["stars"],
+                    5,
+                ) * 10
+
+            if c.get("rating"):
+                score += min(
+                    c["rating"],
+                    10,
+                ) * 4
+
+            if c.get("price") is not None:
+                score += 15
+
+            listed = {
+                x.casefold()
+                for x in c.get(
+                    "amenities",
+                    [],
+                )
+            }
+
+            score += (
+                10
+                * len(
+                    amenities.intersection(
+                        listed
+                    )
+                )
+            )
+
+            return score
+
+        hotels = sorted(
+            candidates["hotels"],
+            key=hotel_score,
+            reverse=True,
+        )[:30]
+
+        restaurants = candidates[
+            "restaurants"
+        ][:50]
+
+        places = candidates[
+            "places"
+        ][:50]
+
+        transport = candidates[
+            "transport"
+        ][:40]
+
+        return {
+            "hotels": hotels,
+            "restaurants": restaurants,
+            "places": places,
+            "transport": transport,
+        }
+
+    def _build_result_from_ids(
+        self,
+        raw: Dict[str, Any],
+        candidates: Dict[str, List[Dict[str, Any]]],
+        data: Dict[str, Any],
+        geo: CityGeo,
+    ) -> TripPlanResponse:
+
+        pools = {
+            key: {
+                item["id"]: item
+                for item in value
+            }
+            for key, value in candidates.items()
+        }
+
+        warnings: List[str] = []
+
+        hotel_sel = (
+            raw.get("hotel", {})
+        )
+
+        hotel_c = pools[
+            "hotels"
+        ].get(
+            hotel_sel.get(
+                "candidate_id"
+            )
+        )
+
+        if not hotel_c:
+
+            warnings.append(
+                "No OpenStreetMap-verified hotel "
+                "matched the AI selection."
+            )
+
+            hotel = HotelItem(
+                name="",
+                verified=False,
+            )
+
+        else:
+
+            listed = {
+                x.casefold()
+                for x in hotel_c.get(
+                    "amenities",
+                    [],
+                )
+            }
+
+            hotel = HotelItem(
+                candidate_id=hotel_c["id"],
+                name=hotel_c["name"],
+                stars=hotel_c.get("stars"),
+                aggregated_rating_10=hotel_c.get(
+                    "rating"
+                ),
+                price_per_room_per_night_try=hotel_c.get(
+                    "price"
+                ),
+                total_hotel_cost_try=(
+                    hotel_c.get(
+                        "price"
+                    )
+                    * data["rooms_count"]
+                    * data["nights"]
+                    if hotel_c.get(
+                        "price"
+                    )
+                    is not None
+                    else None
+                ),
+                address=hotel_c.get(
+                    "address",
+                    "",
+                ),
+                has_pool=(
+                    "pool" in listed
+                    or "swimming_pool"
+                    in listed
+                ),
+                has_spa=(
+                    "spa" in listed
+                ),
+                has_aquapark=(
+                    "aquapark"
+                    in listed
+                    or "water_park"
+                    in listed
+                ),
+                has_private_beach=(
+                    "private_beach"
+                    in listed
+                    or "beach_resort"
+                    in listed
+                ),
+                location_tag=data.get(
+                    "hotel_location",
+                    "",
+                ),
+                booking_links=(
+                    [
+                        BookingLink(
+                            provider_name=(
+                                "Official website"
+                            ),
+                            url=hotel_c[
+                                "website"
+                            ],
+                            kind="source",
+                        )
+                    ]
+                    if hotel_c.get(
+                        "website"
+                    )
+                    else []
+                ),
+                sources=[
+                    Source(
+                        title="OpenStreetMap",
+                        url=hotel_c[
+                            "osm_url"
+                        ],
+                        type="osm",
+                    )
+                ],
+                why=WhyReason(
+                    **(
+                        hotel_sel.get(
+                            "why"
+                        )
+                        or {}
+                    )
+                ),
+                verified=True,
+                price_verified=(
+                    hotel_c.get(
+                        "price"
+                    )
+                    is not None
+                ),
+            )
+
+            if not hotel.price_verified:
+                warnings.append(
+                    "This free data source did not provide "
+                    "a verified current hotel price, so the app "
+                    "does not claim it is the absolute cheapest hotel."
+                )
+
+        trans_sel = (
+            raw.get(
+                "transportation",
+                {},
+            )
+        )
+
+        trans_c = pools[
+            "transport"
+        ].get(
+            trans_sel.get(
+                "candidate_id"
+            )
+        )
+
+        if trans_c:
+
+            transport = TransportItem(
+                mode=data[
+                    "transport_mode"
+                ],
+                is_feasible=True,
+                carrier_summary=(
+                    trans_c.get(
+                        "operator"
+                    )
+                    or trans_c.get(
+                        "name"
+                    )
+                ),
+                candidate_id=trans_c[
+                    "id"
+                ],
+                origin_terminal=trans_c.get(
+                    "name",
+                    "",
+                ),
+                destination_terminal="",
+                booking_links=(
+                    [
+                        BookingLink(
+                            provider_name=(
+                                "Official website"
+                            ),
+                            url=trans_c[
+                                "website"
+                            ],
+                            kind="source",
+                        )
+                    ]
+                    if trans_c.get(
+                        "website"
+                    )
+                    else []
+                ),
+                sources=[
+                    Source(
+                        title="OpenStreetMap",
+                        url=trans_c[
+                            "osm_url"
+                        ],
+                        type="osm",
+                    )
+                ],
+                why=WhyReason(
+                    **(
+                        trans_sel.get(
+                            "why"
+                        )
+                        or {}
+                    )
+                ),
+                verified=True,
+                price_verified=(
+                    trans_c.get(
+                        "price"
+                    )
+                    is not None
+                ),
+            )
+
+        else:
+
+            transport = TransportItem(
+                mode=data[
+                    "transport_mode"
+                ],
+                is_feasible=False,
+                feasibility_warning=(
+                    "No route/operator candidate "
+                    "could be verified from the free "
+                    "public data sources."
+                ),
+                why=WhyReason(
+                    **(
+                        trans_sel.get(
+                            "why"
+                        )
+                        or {}
+                    )
+                ),
+                verified=False,
+            )
+
+            warnings.append(
+                "No free, route-specific transport operator "
+                "data was verified. The app will not invent "
+                "a company, time or ticket price."
+            )
+
+        if (
+            transport.verified
+            and not transport.price_verified
+        ):
+            warnings.append(
+                "The transport operator is verified, "
+                "but a current ticket price is not available "
+                "from the free public data source; "
+                "no cheapest-price claim is made."
+            )
+
+        days: List[DayPlan] = []
+
+        used_place_ids: set[str] = set()
+        used_restaurant_ids: set[str] = set()
+
+        start = date.fromisoformat(
+            data["start_date"]
+        )
+
+        raw_days = (
+            raw.get(
+                "daily_schedule"
+            )
+            or []
+        )
+
+        for idx in range(
+            int(data["nights"])
+        ):
+
+            day_raw = (
+                raw_days[idx]
+                if idx < len(raw_days)
+                else {}
+            )
+
+            activities: List[
+                ActivityItem
+            ] = []
+
+            restaurants: List[
+                RestaurantItem
+            ] = []
+
+            for act in day_raw.get(
+                "activities",
+                [],
+            )[:3]:
+
+                cand = pools[
+                    "places"
+                ].get(
+                    act.get(
+                        "candidate_id"
+                    )
+                )
+
+                if (
+                    not cand
+                    or cand["id"]
+                    in used_place_ids
+                ):
+                    continue
+
+                used_place_ids.add(
+                    cand["id"]
+                )
+
+                activities.append(
+                    ActivityItem(
+                        candidate_id=cand[
+                            "id"
+                        ],
+                        time_slot=act.get(
+                            "time_slot",
+                            "",
+                        ),
+                        place_name=cand[
+                            "name"
+                        ],
+                        category=(
+                            cand.get(
+                                "description"
+                            )
+                            or "Attraction"
+                        ),
+                        address=cand.get(
+                            "address",
+                            "",
+                        ),
+                        map_url=(
+                            self._maps_search_url(
+                                cand[
+                                    "name"
+                                ],
+                                data[
+                                    "destination"
+                                ],
+                            )
+                        ),
+                        source_urls=[
+                            cand[
+                                "osm_url"
+                            ]
+                        ],
+                        why=WhyReason(
+                            **(
+                                act.get(
+                                    "why"
+                                )
+                                or {}
+                            )
+                        ),
+                        verified=True,
+                    )
+                )
+
+            for r in day_raw.get(
+                "restaurants",
+                [],
+            )[:3]:
+
+                cand = pools[
+                    "restaurants"
+                ].get(
+                    r.get(
+                        "candidate_id"
+                    )
+                )
+
+                if (
+                    not cand
+                    or cand["id"]
+                    in used_restaurant_ids
+                ):
+                    continue
+
+                used_restaurant_ids.add(
+                    cand["id"]
+                )
+
+                restaurants.append(
+                    RestaurantItem(
+                        candidate_id=cand[
+                            "id"
+                        ],
+                        meal_type=r.get(
+                            "meal_type",
+                            "Meal",
+                        ),
+                        restaurant_name=cand[
+                            "name"
+                        ],
+                        cuisine=cand.get(
+                            "cuisine",
+                            "",
+                        ),
+                        address=cand.get(
+                            "address",
+                            "",
+                        ),
+                        estimated_cost_per_adult_try=(
+                            cand.get(
+                                "price"
+                            )
+                        ),
+                        aggregated_rating_10=(
+                            cand.get(
+                                "rating"
+                            )
+                        ),
+                        map_url=(
+                            self._maps_search_url(
+                                cand[
+                                    "name"
+                                ],
+                                data[
+                                    "destination"
+                                ],
+                            )
+                        ),
+                        source_urls=[
+                            cand[
+                                "osm_url"
+                            ]
+                        ],
+                        why=WhyReason(
+                            **(
+                                r.get(
+                                    "why"
+                                )
+                                or {}
+                            )
+                        ),
+                        verified=True,
+                    )
+                )
+
+            if not activities:
+                warnings.append(
+                    f"Day {idx + 1} has no distinct "
+                    "verified attraction candidate "
+                    "from the free source."
+                )
+
+            if not restaurants:
+                warnings.append(
+                    f"Day {idx + 1} has no distinct "
+                    "verified restaurant candidate "
+                    "from the free source."
+                )
+
+            day_date = (
+                start
+                + timedelta(
+                    days=idx
+                )
+            ).isoformat()
+
+            days.append(
+                DayPlan(
+                    day_number=idx + 1,
+                    calendar_date=day_date,
+                    day_title=(
+                        day_raw.get(
+                            "day_title"
+                        )
+                        or f"Day {idx + 1}"
+                    ),
+                    breakfast_banner=(
+                        day_raw.get(
+                            "breakfast_banner",
+                            "",
+                        )
+                    ),
+                    lunch_banner=(
+                        day_raw.get(
+                            "lunch_banner",
+                            "",
+                        )
+                    ),
+                    dinner_banner=(
+                        day_raw.get(
+                            "dinner_banner",
+                            "",
+                        )
+                    ),
+                    activities=activities,
+                    restaurants=restaurants,
+                )
+            )
+
+        if data[
+            "transport_mode"
+        ] in {
+            "Own Car",
+            "Own EV",
+        }:
+
+            origin_geo = (
+                self.data.geocode_city(
+                    data[
+                        "origin"
+                    ]
+                )
+            )
+
+            route = self.data.road_route(
+                origin_geo,
+                geo,
+            )
+
+            warnings.append(
+                "Road distance comes from "
+                "OSRM/OpenStreetMap. HGS/toll "
+                "and energy prices are estimates "
+                "unless separately verified."
+            )
+
+        hotel_total = (
+            hotel.total_hotel_cost_try
+        )
+
+        transport_total = (
+            transport.total_transport_cost_try
+        )
+
+        food_total = None
+        grand = None
+
+        if (
+            hotel_total is not None
+            or transport_total is not None
+        ):
+            grand = sum(
+                value
+                for value in [
+                    hotel_total,
+                    transport_total,
+                    food_total,
+                ]
+                if value is not None
+            )
+
+        return TripPlanResponse(
+            destination_city=data[
+                "destination"
+            ],
+            origin_city=data[
+                "origin"
+            ],
+            adults_count=data[
+                "adults_count"
+            ],
+            children_count=data[
+                "children_count"
+            ],
+            rooms_count=data[
+                "rooms_count"
+            ],
+            total_travelers=(
+                data[
+                    "adults_count"
+                ]
+                + data[
+                    "children_count"
+                ]
+            ),
+            meal_board=data[
+                "meal_board"
+            ],
+            start_date=data[
+                "start_date"
+            ],
+            end_date=(
+                self._calculate_dates(
+                    data[
+                        "start_date"
+                    ],
+                    data[
+                        "nights"
+                    ],
+                )
+            ),
+            grand_total_trip_cost_try=grand,
+            transportation=transport,
+            hotel=hotel,
+            daily_schedule=days,
+            departure_day_buffer=(
+                DepartureDayBuffer(
+                    departure_mode=data[
+                        "transport_mode"
+                    ],
+                    why=WhyReason(
+                        title="Return-day planning",
+                        explanation=(
+                            "Free mode does not invent "
+                            "a ticket time. Use a verified "
+                            "departure time when a provider "
+                            "source supplies one."
+                        ),
+                    ),
+                )
+            ),
+            cost_breakdown=(
+                TripCostBreakdown(
+                    hotel_total_try=hotel_total,
+                    transport_total_try=transport_total,
+                    grand_total_try=grand,
+                )
+            ),
+            sources=[
+                Source(
+                    title="OpenStreetMap",
+                    url=(
+                        "https://www.openstreetmap.org/"
+                    ),
+                    type="osm",
+                )
+            ],
+            data_warnings=list(
+                dict.fromkeys(
+                    warnings
+                )
+            ),
+        )
+
+    def generate_plan(
+        self,
+        data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        start_date = data[
+            "start_date"
+        ]
+
+        end_date = (
+            self._calculate_dates(
+                start_date,
+                int(
+                    data["nights"]
+                ),
+            )
+        )
+
+        language = {
+            "tr": "Turkish",
+            "en": "English",
+            "ar": "Arabic",
+        }.get(
+            data.get("language"),
+            "English",
+        )
+
+        dest_geo = (
+            self.data.geocode_city(
+                data[
+                    "destination"
+                ]
+            )
+        )
+
+        candidates = (
+            self.data.overpass_candidates(
+                data[
+                    "destination"
+                ],
+                dest_geo,
+            )
+        )
+
+        packed = (
+            self._candidate_pack(
+                data[
+                    "destination"
+                ],
+                dest_geo,
+                candidates,
+                data,
+            )
+        )
+
+        if not any(
+            packed.values()
+        ):
+            raise TravelAIError(
+                "No verified OpenStreetMap "
+                "candidates were found for "
+                "this destination."
+            )
 
         prompt = f"""
-You are VoyageAI, a live travel SEARCHER and itinerary planner for Turkey.
+You are VoyageAI, a travel planner.
+You are working in FREE MODE.
 
-This is NOT a creative-writing task. Search the live public web before deciding anything.
-Use the Google Search tool in this request.
+You receive verified candidate records from OpenStreetMap.
+You MUST only choose candidate IDs that appear in those records.
+
+You do NOT have live Google Search in this mode.
 
 USER REQUEST
-============
+
 Origin: {data['origin']}
 Destination: {data['destination']}
 Start date: {start_date}
@@ -367,270 +1687,206 @@ Rooms: {data['rooms_count']}
 Transport preference: {data['transport_mode']}
 Budget mode: {data['budget_type']}
 Budget amount TRY: {data.get('budget_amount_try')}
-Minimum hotel rating: {data['hotel_min_rating']}/10
-Hotel location preference: {data['hotel_location']}
-Required hotel amenities: {data['amenities']}
+Minimum hotel rating: {data['hotel_min_rating']}
+Hotel location: {data['hotel_location']}
+Required amenities: {data['amenities']}
 Meal plan: {data['meal_board']}
 Special notes: {data.get('special_notes', '')}
 Output language: {language}
 
-NON-NEGOTIABLE ACCURACY RULES
-=============================
-1. LIVE SEARCH ONLY. Do not use remembered examples or generic tourist templates.
-2. NEVER invent a hotel, restaurant, attraction, station, route, ticket time, price, rating, address, availability, URL, phone number, or provider.
-3. Every selected hotel, transport option, restaurant, and attraction must have at least one source URL that comes from the live search results.
-4. A URL may be placed into booking_links or source_urls ONLY if it is a URL actually present in the grounded search results.
-5. Never manufacture deep links by guessing query parameters.
-6. If an exact direct reservation URL with the user's date/passengers/rooms/meal plan cannot be verified from the search result, set exact_parameters_supported=false and use the verified provider/source URL instead.
-7. Do not pretend that a generic provider homepage is an exact reservation link.
-8. Prices must be current to the searched result as closely as the source permits. If price or availability cannot be verified, return null instead of guessing.
-9. Use the user's exact dates, traveler counts, room count and meal plan when searching hotel/transport availability.
-10. Hotel filtering is mandatory: rating, location, amenities and meal plan must match the user's request. If no matching verified hotel is found, return an explicit warning instead of inventing one.
-11. Rank candidates by a best-and-cheapest approach: quality/reputation + requirement match + price + practical location. Explain the score briefly.
-12. For multiple-day stays, do NOT repeat the same attraction or restaurant unless there is no realistic alternative; rank distinct options for each day.
-13. Search for actual places in the destination city. Never substitute a famous place from another city.
-14. For restaurants, return real named businesses and a direct Google Maps search URL can be generated from the verified business name after the model returns; do not return generic category searches.
-15. For transport, search actual schedules for the chosen date. If the route requires a transfer, represent the legs clearly. If the requested mode is impossible, set is_feasible=false.
-16. For return day, work backward from the REAL return departure time: hotel checkout, lunch/activity, transfer time, and a safety buffer. Never invent a departure time.
-17. For Own Car / Own EV, do not invent tolls or energy costs. Give only an estimate when you have sufficient searched distance/toll data; otherwise use null and explain.
-18. Do NOT add filler content just to make the JSON complete.
-19. All user-visible descriptive text must be written in {language}, but place names and company names should preserve their real official spelling when appropriate.
-20. Output ONLY JSON matching the provided schema.
+FREE-MODE RULES
 
-SEARCH PRIORITIES
-=================
-- Official operator websites first for transport schedules and reservation sources.
-- Official hotel site or reputable booking provider pages for hotel facts.
-- Google/search-indexed business pages for restaurants and attractions.
-- Prefer current pages that explicitly mention the destination, date, provider and relevant conditions.
+1. NEVER invent candidate IDs.
+2. NEVER invent names.
+3. NEVER invent prices.
+4. NEVER invent ratings.
+5. NEVER invent addresses.
+6. NEVER invent operators.
+7. NEVER invent opening hours.
+8. NEVER invent URLs.
+9. Choose only IDs from the supplied candidate lists.
+10. A hotel is "best + cheapest" only if a verified price exists in the candidate data.
+11. If no price exists, choose the best matching verified hotel and explicitly state that a cheapest claim is unavailable.
+12. For transport, choose an operator/hub candidate only when its candidate record is relevant.
+13. Do not invent a bus company, flight company, ferry company or train company.
+14. Do not invent a departure time.
+15. Do not invent an arrival time.
+16. Do not invent a ticket price.
+17. For activities and restaurants, use distinct candidate IDs across days whenever possible.
+18. Prefer candidates matching the user's required amenities and location.
+19. Prefer stronger ratings and richer public data.
+20. Use score explanations that are based only on supplied candidate data.
+21. Return JSON only.
 
-ITINERARY RULES
-===============
-- Day 1 should fit realistically around arrival time.
-- Each day must have different realistic attractions/restaurants where possible.
-- Do not schedule a place before it opens or after it closes if the searched information provides opening hours.
-- Keep travel time between activities realistic.
-- The departure day must be planned around the actual return departure time and required safety buffer.
-- The plan should mention the source-backed transport times and costs.
+CANDIDATE DATA
 
-IMPORTANT
-=========
-You have access to live Google Search grounding in this request. Use it. If the web does not provide enough evidence, say so in data_warnings instead of filling the gaps from memory.
+{json.dumps(
+    packed,
+    ensure_ascii=False
+)}
 """
 
-        schema = self._plan_schema()
-        result = self._request_gemini(prompt, schema)
-        result["start_date"] = start_date
-        result["end_date"] = end_date
+        why_schema = {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "explanation": {
+                    "type": "string"
+                },
+                "score_metrics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                },
+            },
+            "required": [
+                "title",
+                "explanation",
+                "score_metrics",
+            ],
+        }
 
-        try:
-            validated = TripPlanResponse.model_validate(result)
-        except ValidationError as exc:
-            raise TravelAIError(f"Gemini returned data that failed validation: {exc}") from exc
+        schema = {
+            "type": "object",
+            "properties": {
 
-        return validated.model_dump()
-
-    @staticmethod
-    def _plan_schema() -> Dict[str, Any]:
-        why = {
-            "type": "object",
-            "properties": {
-                "title": {"type": "string"},
-                "explanation": {"type": "string"},
-                "score_metrics": {"type": "array", "items": {"type": "string"}},
-            },
-            "required": ["title", "explanation", "score_metrics"],
-        }
-        booking = {
-            "type": "object",
-            "properties": {
-                "provider_name": {"type": "string"},
-                "url": {"type": ["string", "null"]},
-                "kind": {"type": "string"},
-                "exact_parameters_supported": {"type": "boolean"},
-            },
-            "required": ["provider_name", "url", "kind", "exact_parameters_supported"],
-        }
-        source = {
-            "type": "object",
-            "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "type": {"type": "string"}},
-            "required": ["title", "url", "type"],
-        }
-        hotel = {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "stars": {"type": ["integer", "null"]},
-                "aggregated_rating_10": {"type": ["number", "null"]},
-                "reviews_count": {"type": ["integer", "null"]},
-                "total_hotel_cost_try": {"type": ["number", "null"]},
-                "price_per_room_per_night_try": {"type": ["number", "null"]},
-                "meal_board_type": {"type": "string"},
-                "distance_to_center_km": {"type": ["number", "null"]},
-                "location_tag": {"type": "string"},
-                "has_private_beach": {"type": "boolean"},
-                "has_aquapark": {"type": "boolean"},
-                "has_pool": {"type": "boolean"},
-                "has_spa": {"type": "boolean"},
-                "address": {"type": "string"},
-                "booking_links": {"type": "array", "items": booking},
-                "sources": {"type": "array", "items": source},
-                "why": why,
-                "verified": {"type": "boolean"},
-            },
-            "required": [
-                "name", "stars", "aggregated_rating_10", "reviews_count", "total_hotel_cost_try",
-                "price_per_room_per_night_try", "meal_board_type", "distance_to_center_km", "location_tag",
-                "has_private_beach", "has_aquapark", "has_pool", "has_spa", "address", "booking_links",
-                "sources", "why", "verified"
-            ],
-        }
-        transport = {
-            "type": "object",
-            "properties": {
-                "mode": {"type": "string"},
-                "is_feasible": {"type": "boolean"},
-                "feasibility_warning": {"type": ["string", "null"]},
-                "carrier_summary": {"type": "string"},
-                "departure_time": {"type": "string"},
-                "arrival_time": {"type": "string"},
-                "origin_terminal": {"type": "string"},
-                "destination_terminal": {"type": "string"},
-                "duration": {"type": "string"},
-                "cost_per_adult_try": {"type": ["number", "null"]},
-                "cost_per_child_try": {"type": ["number", "null"]},
-                "total_transport_cost_try": {"type": ["number", "null"]},
-                "booking_links": {"type": "array", "items": booking},
-                "sources": {"type": "array", "items": source},
-                "why": why,
-                "verified": {"type": "boolean"},
-            },
-            "required": [
-                "mode", "is_feasible", "feasibility_warning", "carrier_summary", "departure_time", "arrival_time",
-                "origin_terminal", "destination_terminal", "duration", "cost_per_adult_try", "cost_per_child_try",
-                "total_transport_cost_try", "booking_links", "sources", "why", "verified"
-            ],
-        }
-        activity = {
-            "type": "object",
-            "properties": {
-                "time_slot": {"type": "string"},
-                "place_name": {"type": "string"},
-                "category": {"type": "string"},
-                "address": {"type": "string"},
-                "distance_from_hotel_km": {"type": ["number", "null"]},
-                "transport_mode": {"type": "string"},
-                "transport_cost_try": {"type": ["number", "null"]},
-                "entry_ticket_adult_try": {"type": ["number", "null"]},
-                "aggregated_rating_10": {"type": ["number", "null"]},
-                "map_url": {"type": "string"},
-                "source_urls": {"type": "array", "items": {"type": "string"}},
-                "transit_card_tip": {"type": "string"},
-                "why": why,
-                "verified": {"type": "boolean"},
-            },
-            "required": [
-                "time_slot", "place_name", "category", "address", "distance_from_hotel_km", "transport_mode",
-                "transport_cost_try", "entry_ticket_adult_try", "aggregated_rating_10", "map_url", "source_urls",
-                "transit_card_tip", "why", "verified"
-            ],
-        }
-        restaurant = {
-            "type": "object",
-            "properties": {
-                "meal_type": {"type": "string"},
-                "restaurant_name": {"type": "string"},
-                "cuisine": {"type": "string"},
-                "address": {"type": "string"},
-                "distance_from_hotel_km": {"type": ["number", "null"]},
-                "estimated_cost_per_adult_try": {"type": ["number", "null"]},
-                "estimated_cost_per_child_try": {"type": ["number", "null"]},
-                "aggregated_rating_10": {"type": ["number", "null"]},
-                "map_url": {"type": "string"},
-                "source_urls": {"type": "array", "items": {"type": "string"}},
-                "why": why,
-                "verified": {"type": "boolean"},
-            },
-            "required": [
-                "meal_type", "restaurant_name", "cuisine", "address", "distance_from_hotel_km",
-                "estimated_cost_per_adult_try", "estimated_cost_per_child_try", "aggregated_rating_10", "map_url",
-                "source_urls", "why", "verified"
-            ],
-        }
-        day = {
-            "type": "object",
-            "properties": {
-                "day_number": {"type": "integer"},
-                "calendar_date": {"type": "string"},
-                "day_title": {"type": "string"},
-                "breakfast_banner": {"type": "string"},
-                "lunch_banner": {"type": "string"},
-                "dinner_banner": {"type": "string"},
-                "activities": {"type": "array", "items": activity},
-                "restaurants": {"type": "array", "items": restaurant},
-            },
-            "required": ["day_number", "calendar_date", "day_title", "breakfast_banner", "lunch_banner", "dinner_banner", "activities", "restaurants"],
-        }
-        departure = {
-            "type": "object",
-            "properties": {
-                "departure_mode": {"type": "string"},
-                "checkout_time": {"type": "string"},
-                "lunch_spot_near_hub": {"type": ["object", "null"], "properties": restaurant["properties"], "required": restaurant["required"]},
-                "time_spent_at_lunch": {"type": "string"},
-                "transit_time_to_hub_mins": {"type": "integer"},
-                "required_safety_buffer_mins": {"type": "integer"},
-                "return_departure_time": {"type": "string"},
-                "arrival_at_home_time": {"type": "string"},
-                "activities_before_departure": {"type": "array", "items": activity},
-                "recommended_final_meal": {"type": ["object", "null"], "properties": restaurant["properties"], "required": restaurant["required"]},
-                "distance_from_final_spot_to_terminal_km": {"type": ["number", "null"]},
-                "transit_time_to_terminal_mins": {"type": ["integer", "null"]},
-                "why": why,
-            },
-            "required": [
-                "departure_mode", "checkout_time", "lunch_spot_near_hub", "time_spent_at_lunch",
-                "transit_time_to_hub_mins", "required_safety_buffer_mins", "return_departure_time", "arrival_at_home_time",
-                "activities_before_departure", "recommended_final_meal", "distance_from_final_spot_to_terminal_km",
-                "transit_time_to_terminal_mins", "why"
-            ],
-        }
-        return {
-            "type": "object",
-            "properties": {
-                "destination_city": {"type": "string"},
-                "origin_city": {"type": "string"},
-                "adults_count": {"type": "integer"},
-                "children_count": {"type": "integer"},
-                "rooms_count": {"type": "integer"},
-                "total_travelers": {"type": "integer"},
-                "meal_board": {"type": "string"},
-                "start_date": {"type": "string"},
-                "end_date": {"type": "string"},
-                "grand_total_trip_cost_try": {"type": ["number", "null"]},
-                "transportation": transport,
-                "hotel": hotel,
-                "daily_schedule": {"type": "array", "items": day},
-                "departure_day_buffer": departure,
-                "cost_breakdown": {
+                "hotel": {
                     "type": "object",
                     "properties": {
-                        "hotel_total_try": {"type": ["number", "null"]},
-                        "transport_total_try": {"type": ["number", "null"]},
-                        "food_budget_total_try": {"type": ["number", "null"]},
-                        "activities_and_transfers_try": {"type": ["number", "null"]},
-                        "grand_total_try": {"type": ["number", "null"]},
+                        "candidate_id": {
+                            "type": "string"
+                        },
+                        "why": why_schema,
                     },
-                    "required": ["hotel_total_try", "transport_total_try", "food_budget_total_try", "activities_and_transfers_try", "grand_total_try"],
+                    "required": [
+                        "candidate_id",
+                        "why",
+                    ],
                 },
-                "sources": {"type": "array", "items": source},
-                "data_warnings": {"type": "array", "items": {"type": "string"}},
+
+                "transportation": {
+                    "type": "object",
+                    "properties": {
+                        "candidate_id": {
+                            "type": "string"
+                        },
+                        "why": why_schema,
+                    },
+                    "required": [
+                        "candidate_id",
+                        "why",
+                    ],
+                },
+
+                "daily_schedule": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+
+                            "day_number": {
+                                "type": "integer"
+                            },
+
+                            "day_title": {
+                                "type": "string"
+                            },
+
+                            "breakfast_banner": {
+                                "type": "string"
+                            },
+
+                            "lunch_banner": {
+                                "type": "string"
+                            },
+
+                            "dinner_banner": {
+                                "type": "string"
+                            },
+
+                            "activities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+
+                                        "candidate_id": {
+                                            "type": "string"
+                                        },
+
+                                        "time_slot": {
+                                            "type": "string"
+                                        },
+
+                                        "why": why_schema,
+                                    },
+                                    "required": [
+                                        "candidate_id",
+                                        "time_slot",
+                                        "why",
+                                    ],
+                                },
+                            },
+
+                            "restaurants": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+
+                                        "candidate_id": {
+                                            "type": "string"
+                                        },
+
+                                        "meal_type": {
+                                            "type": "string"
+                                        },
+
+                                        "why": why_schema,
+                                    },
+                                    "required": [
+                                        "candidate_id",
+                                        "meal_type",
+                                        "why",
+                                    ],
+                                },
+                            },
+                        },
+                        "required": [
+                            "day_number",
+                            "day_title",
+                            "breakfast_banner",
+                            "lunch_banner",
+                            "dinner_banner",
+                            "activities",
+                            "restaurants",
+                        ],
+                    },
+                },
             },
             "required": [
-                "destination_city", "origin_city", "adults_count", "children_count", "rooms_count", "total_travelers",
-                "meal_board", "start_date", "end_date", "grand_total_trip_cost_try", "transportation", "hotel",
-                "daily_schedule", "departure_day_buffer", "cost_breakdown", "sources", "data_warnings"
+                "hotel",
+                "transportation",
+                "daily_schedule",
             ],
         }
 
+        # EXACTLY ONE Gemini API request for the entire trip.
+        raw = self._request_gemini(
+            prompt,
+            schema,
+        )
+
+        plan = self._build_result_from_ids(
+            raw,
+            candidates,
+            data,
+            dest_geo,
+        )
+
+        return plan.model_dump()
+    
 #http://127.0.0.1:8000
