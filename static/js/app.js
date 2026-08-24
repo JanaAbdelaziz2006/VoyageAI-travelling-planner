@@ -1,1336 +1,1446 @@
 const state = {
-  lang: "tr",
-  currentData: null
+    lang: "tr",
+    currentData: null
 };
 
 
 const I18N = {
 
-  tr: {
-    title: "VoyageAI Türkiye",
-    subtitle: "Ücretsiz doğrulanmış seyahat planı",
-    search: "Ara & Planla",
-    searching: "Veriler hazırlanıyor...",
-    origin: "Kalkış",
-    destination: "Varış",
-    date: "Gidiş tarihi",
-    nights: "Gece",
-    adults: "Yetişkin",
-    children: "Çocuk",
-    childAge: "Çocuk yaşı",
-    rooms: "Oda",
-    transport: "Ulaşım",
-    budget: "Bütçe",
-    cheapest: "En iyi + en ucuz",
-    custom: "Bütçe sınırı",
-    minRating: "Min. otel puanı",
-    location: "Otel konumu",
-    amenities: "Gerekli olanaklar",
-    meal: "Yemek planı",
-    notes: "Özel notlar",
-    hotel: "Önerilen otel",
-    transportPlan: "Ulaşım planı",
-    daily: "Günlük plan",
-    returnDay: "Dönüş günü",
-    sources: "Doğrulanmış kaynaklar",
-    book: "Kaynağı aç",
-    warning: "Uyarı",
-    noData: "Sonuç görmek için arama yapın.",
-    unavailable: "Doğrulanmış veri bulunamadı.",
-    map: "Haritada aç",
-    reason: "Neden seçildi?"
-  },
+    tr: {
+        search:
+            "Ara & Planla",
 
-  en: {
-    title: "VoyageAI Türkiye",
-    subtitle: "Free travel planning with verified public data",
-    search: "Search & Plan",
-    searching: "Preparing verified data...",
-    origin: "Departure",
-    destination: "Destination",
-    date: "Start date",
-    nights: "Nights",
-    adults: "Adults",
-    children: "Children",
-    childAge: "Child age",
-    rooms: "Rooms",
-    transport: "Transport",
-    budget: "Budget",
-    cheapest: "Best + cheapest",
-    custom: "Budget limit",
-    minRating: "Min hotel rating",
-    location: "Hotel location",
-    amenities: "Required amenities",
-    meal: "Meal plan",
-    notes: "Special notes",
-    hotel: "Recommended hotel",
-    transportPlan: "Transport plan",
-    daily: "Daily plan",
-    returnDay: "Return day",
-    sources: "Verified sources",
-    book: "Open source",
-    warning: "Warning",
-    noData: "Search to see results.",
-    unavailable: "No verified data found.",
-    map: "Open map",
-    reason: "Why selected?"
-  },
+        searching:
+            "Canlı veriler aranıyor...",
 
-  ar: {
-    title: "VoyageAI Türkiye",
-    subtitle: "خطة سفر مجانية مبنية على بيانات عامة موثقة",
-    search: "ابحث وخطط",
-    searching: "جارٍ تجهيز البيانات...",
-    origin: "المغادرة",
-    destination: "الوجهة",
-    date: "تاريخ السفر",
-    nights: "الليالي",
-    adults: "البالغون",
-    children: "الأطفال",
-    childAge: "عمر الطفل",
-    rooms: "الغرف",
-    transport: "النقل",
-    budget: "الميزانية",
-    cheapest: "الأفضل + الأرخص",
-    custom: "حد الميزانية",
-    minRating: "أدنى تقييم للفندق",
-    location: "موقع الفندق",
-    amenities: "المرافق المطلوبة",
-    meal: "خطة الوجبات",
-    notes: "ملاحظات خاصة",
-    hotel: "الفندق المقترح",
-    transportPlan: "خطة النقل",
-    daily: "الخطة اليومية",
-    returnDay: "يوم العودة",
-    sources: "المصادر الموثقة",
-    book: "فتح المصدر",
-    warning: "تنبيه",
-    noData: "ابدأ البحث لرؤية النتائج.",
-    unavailable: "لم يتم العثور على بيانات موثقة.",
-    map: "فتح الخريطة",
-    reason: "سبب الاختيار"
-  }
+        map:
+            "Google Maps'te aç"
+    },
+
+    en: {
+        search:
+            "Search & Plan",
+
+        searching:
+            "Searching live data...",
+
+        map:
+            "Open in Google Maps"
+    },
+
+    ar: {
+        search:
+            "ابحث وخطط",
+
+        searching:
+            "جارٍ البحث المباشر...",
+
+        map:
+            "فتح في خرائط Google"
+    }
 
 };
 
 
-const cityNames = [
-  "Adana",
-  "Adıyaman",
-  "Afyonkarahisar",
-  "Ağrı",
-  "Aksaray",
-  "Amasya",
-  "Ankara",
-  "Antalya",
-  "Ardahan",
-  "Artvin",
-  "Aydın",
-  "Balıkesir",
-  "Bartın",
-  "Batman",
-  "Bayburt",
-  "Bilecik",
-  "Bingöl",
-  "Bitlis",
-  "Bolu",
-  "Burdur",
-  "Bursa",
-  "Çanakkale",
-  "Çankırı",
-  "Çorum",
-  "Denizli",
-  "Diyarbakır",
-  "Düzce",
-  "Edirne",
-  "Elazığ",
-  "Erzincan",
-  "Erzurum",
-  "Eskişehir",
-  "Gaziantep",
-  "Giresun",
-  "Gümüşhane",
-  "Hakkâri",
-  "Hatay",
-  "Iğdır",
-  "Isparta",
-  "İstanbul",
-  "İzmir",
-  "Kahramanmaraş",
-  "Karabük",
-  "Karaman",
-  "Kars",
-  "Kastamonu",
-  "Kayseri",
-  "Kırıkkale",
-  "Kırklareli",
-  "Kırşehir",
-  "Kilis",
-  "Kocaeli",
-  "Konya",
-  "Kütahya",
-  "Malatya",
-  "Manisa",
-  "Mardin",
-  "Mersin",
-  "Muğla",
-  "Muş",
-  "Nevşehir",
-  "Niğde",
-  "Ordu",
-  "Osmaniye",
-  "Rize",
-  "Sakarya",
-  "Samsun",
-  "Siirt",
-  "Sinop",
-  "Sivas",
-  "Şanlıurfa",
-  "Şırnak",
-  "Tekirdağ",
-  "Tokat",
-  "Trabzon",
-  "Tunceli",
-  "Uşak",
-  "Van",
-  "Yalova",
-  "Yozgat",
-  "Zonguldak"
+const cities = [
+
+    "Adana",
+    "Adıyaman",
+    "Afyonkarahisar",
+    "Ağrı",
+    "Aksaray",
+    "Amasya",
+    "Ankara",
+    "Antalya",
+    "Ardahan",
+    "Artvin",
+    "Aydın",
+    "Balıkesir",
+    "Bartın",
+    "Batman",
+    "Bayburt",
+    "Bilecik",
+    "Bingöl",
+    "Bitlis",
+    "Bolu",
+    "Burdur",
+    "Bursa",
+    "Çanakkale",
+    "Çankırı",
+    "Çorum",
+    "Denizli",
+    "Diyarbakır",
+    "Düzce",
+    "Edirne",
+    "Elazığ",
+    "Erzincan",
+    "Erzurum",
+    "Eskişehir",
+    "Gaziantep",
+    "Giresun",
+    "Gümüşhane",
+    "Hakkâri",
+    "Hatay",
+    "Iğdır",
+    "Isparta",
+    "İstanbul",
+    "İzmir",
+    "Kahramanmaraş",
+    "Karabük",
+    "Karaman",
+    "Kars",
+    "Kastamonu",
+    "Kayseri",
+    "Kırıkkale",
+    "Kırklareli",
+    "Kırşehir",
+    "Kilis",
+    "Kocaeli",
+    "Konya",
+    "Kütahya",
+    "Malatya",
+    "Manisa",
+    "Mardin",
+    "Mersin",
+    "Muğla",
+    "Muş",
+    "Nevşehir",
+    "Niğde",
+    "Ordu",
+    "Osmaniye",
+    "Rize",
+    "Sakarya",
+    "Samsun",
+    "Siirt",
+    "Sinop",
+    "Sivas",
+    "Şanlıurfa",
+    "Şırnak",
+    "Tekirdağ",
+    "Tokat",
+    "Trabzon",
+    "Tunceli",
+    "Uşak",
+    "Van",
+    "Yalova",
+    "Yozgat",
+    "Zonguldak"
+
 ];
 
 
-const $ = id =>
-  document.getElementById(id);
+const $ = (
+    id
+) =>
+    document.getElementById(id);
 
 
 const t = () =>
-  I18N[state.lang];
+    I18N[
+        state.lang
+    ];
 
 
-function escapeHtml(value) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-}
-
-
-function money(value) {
-
-  if (
-    value == null
-    || Number.isNaN(
-      Number(value)
-    )
-  ) {
-    return "—";
-  }
-
-  return `${Number(value).toLocaleString()} TRY`;
-}
-
-
-function sourceButtons(
-  sources = []
+function esc(
+    value
 ) {
 
-  const seen =
-    new Set();
-
-  return (
-    sources || []
-  )
-    .filter(
-      s =>
-        s?.url
-        && !seen.has(s.url)
-        && seen.add(s.url)
+    return String(
+        value ?? ""
     )
-    .slice(0, 8)
-    .map(
-      s =>
-        `
-        <a
-          href="${escapeHtml(s.url)}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="source-chip"
-        >
-          ↗ ${escapeHtml(
-            s.title
-            || t().sources
-          )}
-        </a>
-        `
-    )
-    .join("");
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 }
 
 
-function applyLanguage() {
-
-  document.documentElement.lang =
-    state.lang;
-
-  document.documentElement.dir =
-    state.lang === "ar"
-      ? "rtl"
-      : "ltr";
-
-  document
-    .querySelectorAll(
-      "[data-i18n]"
-    )
-    .forEach(
-      el => {
-
-        const key =
-          el.dataset.i18n;
-
-        if (t()[key]) {
-          el.textContent =
-            t()[key];
-        }
-
-      }
-    );
-
-  if (
-    state.currentData
-  ) {
-    render(
-      state.currentData
-    );
-  }
-}
-
-
-function fillCities() {
-
-  for (
-    const city of cityNames
-  ) {
-
-    $(
-      "origin"
-    ).append(
-      new Option(
-        city,
-        city
-      )
-    );
-
-    $(
-      "destination"
-    ).append(
-      new Option(
-        city,
-        city
-      )
-    );
-  }
-
-  $(
-    "origin"
-  ).value = "Bursa";
-
-  $(
-    "destination"
-  ).value = "İstanbul";
-}
-
-
-function showToast(
-  message
+function fmtPrice(
+    value
 ) {
 
-  const old =
-    $("toast");
+    if (
+        value === null
+        ||
+        value === undefined
+        ||
+        Number.isNaN(
+            Number(
+                value
+            )
+        )
+    ) {
 
-  if (old) {
-    old.remove();
-  }
+        return "—";
 
-  const el =
-    document.createElement(
-      "div"
+    }
+
+
+    return (
+        Number(
+            value
+        ).toLocaleString()
+        + " TRY"
     );
+}
 
-  el.id = "toast";
 
-  el.className =
-    "toast";
+function sourceLinks(
+    items = []
+) {
 
-  el.textContent =
-    message;
+    const seen =
+        new Set();
 
-  document.body.appendChild(
-    el
-  );
 
-  setTimeout(
-    () => el.remove(),
-    9000
-  );
+    return items
+
+        .filter(
+            item =>
+                item?.url
+                &&
+                !seen.has(
+                    item.url
+                )
+                &&
+                seen.add(
+                    item.url
+                )
+        )
+
+        .slice(
+            0,
+            10
+        )
+
+        .map(
+            item =>
+                `
+                <a
+                    class="source-chip"
+                    target="_blank"
+                    rel="noopener"
+                    href="${esc(
+                        item.url
+                    )}"
+                >
+                    ${esc(
+                        item.title
+                        || "Source"
+                    )}
+                </a>
+                `
+        )
+
+        .join("");
 }
 
 
 async function api(
-  url,
-  payload
+    path,
+    payload
 ) {
 
-  const res =
-    await fetch(
-      url,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-        body:
-          JSON.stringify(
-            payload
-          )
-      }
-    );
+    const response =
+        await fetch(
+            path,
+            {
+                method:
+                    "POST",
 
-  const json =
-    await res
-      .json()
-      .catch(
-        () => null
-      );
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-  if (
-    !res.ok
-    || !json?.success
-  ) {
+                body:
+                    JSON.stringify(
+                        payload
+                    )
+            }
+        );
 
-    throw new Error(
-      json?.error
-      || `HTTP ${res.status}`
-    );
 
-  }
+    const body =
+        await response
+            .json()
+            .catch(
+                () => null
+            );
 
-  return json.data;
+
+    if (
+        !response.ok
+        ||
+        !body?.success
+    ) {
+
+        throw new Error(
+            body?.error
+            ||
+            `HTTP ${response.status}`
+        );
+
+    }
+
+
+    return body.data;
 }
 
 
 function collectPayload() {
 
-  const children =
-    Number(
-      $("children_count")
-        .value || 0
-    );
-
-  return {
-
-    origin:
-      $("origin").value,
-
-    destination:
-      $("destination").value,
-
-    start_date:
-      $("start_date").value,
-
-    nights:
-      Number(
-        $("nights").value || 3
-      ),
-
-    adults_count:
-      Number(
-        $("adults_count")
-          .value || 2
-      ),
-
-    children_count:
-      children,
-
-    child_age:
-      children > 0
-        ? Number(
-            $("child_age")
-              .value || 10
-          )
-        : null,
-
-    rooms_count:
-      Number(
-        $("rooms_count")
-          .value || 1
-      ),
-
-    transport_mode:
-      $("transport_mode")
-        .value,
-
-    budget_type:
-      $("budget_mode")
-        .value,
-
-    budget_amount_try:
-      $("budget_amount_try")
-        .value
-        ? Number(
-            $("budget_amount_try")
-              .value
-          )
-        : null,
-
-    hotel_min_rating:
-      Number(
-        $("hotel_min_rating")
-          .value || 8
-      ),
-
-    hotel_location:
-      $("hotel_location")
-        .value,
-
-    amenities:
-      [
-        ...document.querySelectorAll(
-          "input[name='amenity']:checked"
-        )
-      ].map(
-        x => x.value
-      ),
-
-    meal_board:
-      $("meal_board")
-        .value,
-
-    special_notes:
-      $("special_notes")
-        .value
-        .trim(),
-
-    language:
-      state.lang
-  };
-}
+    const childrenCount =
+        Number(
+            $("children_count").value
+            || 0
+        );
 
 
-function renderWhy(
-  why
-) {
+    return {
 
-  if (!why) {
-    return "";
-  }
+        origin:
+            $("origin").value,
 
-  return `
-    <div class="why">
-      <strong>
-        ${escapeHtml(
-          why.title
-          || t().reason
-        )}
-      </strong>
+        destination:
+            $("destination").value,
 
-      <p>
-        ${escapeHtml(
-          why.explanation
-          || ""
-        )}
-      </p>
+        start_date:
+            $("start_date").value,
 
-      <div>
-        ${(why.score_metrics || [])
-          .map(
-            x =>
-              `
-              <span class="metric">
-                ${escapeHtml(x)}
-              </span>
-              `
-          )
-          .join("")}
-      </div>
-    </div>
-  `;
+        nights:
+            Number(
+                $("nights").value
+                || 3
+            ),
+
+        adults_count:
+            Number(
+                $("adults_count").value
+                || 2
+            ),
+
+        children_count:
+            childrenCount,
+
+        child_age:
+            childrenCount
+            ? Number(
+                $("child_age").value
+                || 1
+            )
+            : null,
+
+        rooms_count:
+            Number(
+                $("rooms_count").value
+                || 1
+            ),
+
+        transport_mode:
+            $("transport_mode").value,
+
+        budget_type:
+            $("budget_mode").value,
+
+        budget_amount_try:
+            $("budget_amount_try").value
+            ?
+                Number(
+                    $("budget_amount_try").value
+                )
+            :
+                null,
+
+        hotel_min_rating:
+            Number(
+                $("hotel_min_rating").value
+                || 8
+            ),
+
+        hotel_location:
+            $("hotel_location").value,
+
+        amenities:
+            [
+                ...document.querySelectorAll(
+                    "input[name='amenity']:checked"
+                )
+            ]
+                .map(
+                    input =>
+                        input.value
+                ),
+
+        meal_board:
+            $("meal_board").value,
+
+        special_notes:
+            $("special_notes").value
+                .trim(),
+
+        language:
+            state.lang
+    };
 }
 
 
 function renderHotel(
-  hotel
+    hotel
 ) {
 
-  if (
-    !hotel?.verified
-  ) {
+    if (
+        !hotel
+        ||
+        !hotel.verified
+    ) {
 
-    return `
-      <section class="card">
+        return `
+            <div class="card">
 
-        <div class="section-title">
-          <span>
-            ${t().hotel}
-          </span>
-        </div>
+                <h3>
+                    Recommended Hotel
+                </h3>
 
-        <div class="empty">
-          ${t().unavailable}
-        </div>
-
-      </section>
-    `;
-  }
-
-  return `
-    <section class="card">
-
-      <div class="section-title">
-
-        <span>
-          ${t().hotel}
-        </span>
-
-        <span class="verified">
-          ✓ OSM verified
-        </span>
-
-      </div>
-
-      <h3>
-        ${escapeHtml(
-          hotel.name
-        )}
-      </h3>
-
-      <div class="hotel-meta">
-
-        ${hotel.stars ?? "—"}★
-
-        ·
-
-        ${hotel.aggregated_rating_10 ?? "—"}
-        /10
-
-        ·
-
-        ${money(
-          hotel.price_per_room_per_night_try
-        )}
-        / room-night
-
-      </div>
-
-      <p class="address">
-        ${escapeHtml(
-          hotel.address
-          || ""
-        )}
-      </p>
-
-      <div class="chips">
-
-        <span class="chip">
-          ${escapeHtml(
-            hotel.location_tag
-            || ""
-          )}
-        </span>
-
-        ${
-          hotel.has_pool
-            ? `<span class="chip">Pool</span>`
-            : ""
-        }
-
-        ${
-          hotel.has_private_beach
-            ? `<span class="chip">Beach</span>`
-            : ""
-        }
-
-        ${
-          hotel.has_aquapark
-            ? `<span class="chip">Aquapark</span>`
-            : ""
-        }
-
-        ${
-          hotel.has_spa
-            ? `<span class="chip">Spa</span>`
-            : ""
-        }
-
-      </div>
-
-      ${
-        !hotel.price_verified
-          ? `
-            <div class="warning-box">
-
-              No current verified price
-              in the free public data source.
-
-              The app does not claim this
-              is the absolute cheapest hotel.
+                <p class="muted">
+                    No verified hotel result
+                    was returned.
+                </p>
 
             </div>
-          `
-          : ""
-      }
+        `;
 
-      ${renderWhy(
-        hotel.why
-      )}
+    }
 
-      <div class="link-row">
 
-        ${sourceButtons(
-          hotel.sources
-        )}
+    return `
+        <div class="card">
 
-        ${sourceButtons(
-          hotel.booking_links
-        )}
+            <div class="row">
 
-      </div>
+                <div>
 
-    </section>
-  `;
+                    <h3>
+                        ${esc(
+                            hotel.name
+                        )}
+                    </h3>
+
+                    <p class="muted">
+
+                        Rating:
+                        ${hotel.rating ?? "—"}/10
+
+                        ·
+
+                        Reviews:
+                        ${hotel.reviews ?? "—"}
+
+                    </p>
+
+                </div>
+
+
+                <span class="verified">
+                    ✓ Google Hotels
+                </span>
+
+            </div>
+
+
+            <p class="muted">
+
+                ${esc(
+                    hotel.address
+                    || ""
+                )}
+
+            </p>
+
+
+            <div class="chips">
+
+                ${
+                    (
+                        hotel.amenities
+                        || []
+                    )
+
+                    .slice(
+                        0,
+                        12
+                    )
+
+                    .map(
+                        amenity =>
+                            `
+                            <span class="chip">
+                                ${esc(
+                                    amenity
+                                )}
+                            </span>
+                            `
+                    )
+
+                    .join("")
+                }
+
+            </div>
+
+
+            <p class="muted">
+
+                Per room/night:
+                <strong>
+                    ${fmtPrice(
+                        hotel.price_per_room_per_night_try
+                    )}
+                </strong>
+
+            </p>
+
+
+            <p class="price">
+
+                Total:
+                ${fmtPrice(
+                    hotel.total_hotel_cost_try
+                )}
+
+            </p>
+
+
+            ${
+                hotel.link
+
+                ?
+
+                `
+                <a
+                    class="primary-link"
+                    target="_blank"
+                    rel="noopener"
+                    href="${esc(
+                        hotel.link
+                    )}"
+                >
+                    Open hotel source
+                </a>
+                `
+
+                :
+
+                ""
+            }
+
+
+            ${
+                hotel.why
+
+                ?
+
+                `
+                <div class="why">
+                    ${esc(
+                        hotel.why
+                    )}
+                </div>
+                `
+
+                :
+
+                ""
+            }
+
+        </div>
+    `;
 }
 
 
 function renderTransport(
-  trans
+    transport
 ) {
 
-  return `
-    <section class="card">
+    if (!transport) {
+        return "";
+    }
 
-      <div class="section-title">
 
-        <span>
-          ${t().transportPlan}
-        </span>
+    return `
+        <div class="card">
 
-        ${
-          trans?.verified
-            ? `
-              <span class="verified">
-                ✓ OSM verified
-              </span>
-            `
-            : ""
-        }
+            <div class="row">
 
-      </div>
+                <h3>
+                    Transport
+                </h3>
 
-      <h3>
-        ${escapeHtml(
-          trans?.carrier_summary
-          || trans?.mode
-          || ""
-        )}
-      </h3>
+                ${
+                    transport.verified_route
 
-      ${
-        !trans?.verified
-          ? `
-            <div class="warning-box">
-              ${escapeHtml(
-                trans?.feasibility_warning
-                || t().unavailable
-              )}
-            </div>
-          `
-          : ""
-      }
+                    ?
 
-      ${
-        trans?.verified
-        && !trans.price_verified
-          ? `
-            <div class="warning-box">
+                    `
+                    <span class="verified">
+                        ✓ Route checked
+                    </span>
+                    `
 
-              Operator presence was verified,
-              but a current ticket price was not
-              found in the free public data.
+                    :
 
-              No cheapest-price claim is made.
+                    ""
+                }
 
             </div>
-          `
-          : ""
-      }
 
-      <div class="transport-grid">
 
-        <div>
-          <small>
-            Departure
-          </small>
+            ${
+                transport.company
 
-          <strong>
-            ${escapeHtml(
-              trans?.departure_time
-              || "—"
-            )}
-          </strong>
+                ?
+
+                `
+                <h4>
+                    ${esc(
+                        transport.company
+                    )}
+                </h4>
+                `
+
+                :
+
+                `
+                <h4>
+                    No verified operator
+                </h4>
+                `
+            }
+
+
+            ${
+                transport.feasibility_warning
+
+                ?
+
+                `
+                <div class="warning">
+
+                    ${esc(
+                        transport.feasibility_warning
+                    )}
+
+                </div>
+                `
+
+                :
+
+                ""
+            }
+
+
+            ${
+                transport.price_try !== null
+                &&
+                transport.price_try !== undefined
+
+                ?
+
+                `
+                <p class="price">
+
+                    ${fmtPrice(
+                        transport.price_try
+                    )}
+
+                </p>
+                `
+
+                :
+
+                `
+                <div class="warning">
+
+                    The operator was found,
+                    but no current ticket price
+                    was returned by the search.
+
+                </div>
+                `
+            }
+
+
+            ${
+                transport.link
+
+                ?
+
+                `
+                <a
+                    class="primary-link"
+                    target="_blank"
+                    rel="noopener"
+                    href="${esc(
+                        transport.link
+                    )}"
+                >
+                    Open transport source
+                </a>
+                `
+
+                :
+
+                ""
+            }
+
+
+            ${
+                transport.why
+
+                ?
+
+                `
+                <div class="why">
+
+                    ${esc(
+                        transport.why
+                    )}
+
+                </div>
+                `
+
+                :
+
+                ""
+            }
+
         </div>
-
-        <div>
-
-          <small>
-            Arrival
-          </small>
-
-          <strong>
-            ${escapeHtml(
-              trans?.arrival_time
-              || "—"
-            )}
-          </strong>
-
-        </div>
-
-        <div>
-
-          <small>
-            Duration
-          </small>
-
-          <strong>
-            ${escapeHtml(
-              trans?.duration
-              || "—"
-            )}
-          </strong>
-
-        </div>
-
-        <div>
-
-          <small>
-            Total
-          </small>
-
-          <strong>
-            ${money(
-              trans?.total_transport_cost_try
-            )}
-          </strong>
-
-        </div>
-
-      </div>
-
-      ${renderWhy(
-        trans?.why
-      )}
-
-      <div class="link-row">
-
-        ${sourceButtons(
-          trans?.sources
-        )}
-
-        ${sourceButtons(
-          trans?.booking_links
-        )}
-
-      </div>
-
-    </section>
-  `;
+    `;
 }
 
 
-function renderActivity(
-  a
+function renderTransfers(
+    transfer
 ) {
 
-  return `
-    <article class="item-card">
-
-      <div class="item-top">
-
-        <span class="time">
-          ${escapeHtml(
-            a.time_slot
-          )}
-        </span>
-
-        <strong>
-          ${escapeHtml(
-            a.place_name
-          )}
-        </strong>
-
-      </div>
-
-      <div class="muted">
-
-        ${escapeHtml(
-          a.category
-        )}
-
-        ·
-
-        ${escapeHtml(
-          a.address
-          || ""
-        )}
-
-      </div>
-
-      ${
-        a.map_url
-          ? `
-            <a
-              href="${escapeHtml(
-                a.map_url
-              )}"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="map-link"
-            >
-              📍 ${t().map}
-            </a>
-          `
-          : ""
-      }
-
-      ${renderWhy(
-        a.why
-      )}
-
-      <div class="link-row">
-
-        ${sourceButtons(
-          (a.source_urls || [])
-            .map(
-              url => ({
-                url,
-                title:
-                  "OpenStreetMap"
-              })
-            )
-        )}
-
-      </div>
-
-    </article>
-  `;
-}
+    if (!transfer) {
+        return "";
+    }
 
 
-function renderRestaurant(
-  r
-) {
+    return `
+        <div class="card">
 
-  return `
-    <article class="item-card">
+            <h3>
+                Hotel ↔ Transport
+            </h3>
 
-      <div class="item-top">
 
-        <span class="meal-tag">
-          ${escapeHtml(
-            r.meal_type
-          )}
-        </span>
+            ${
+                transfer.to_hotel
 
-        <strong>
-          ${escapeHtml(
-            r.restaurant_name
-          )}
-        </strong>
+                ?
 
-      </div>
+                `
+                <div class="item">
 
-      <div class="muted">
+                    <strong>
+                        Station / terminal →
+                        hotel
+                    </strong>
 
-        ${escapeHtml(
-          r.cuisine
-        )}
+                    <p class="muted">
 
-        ·
+                        Duration:
+                        ${esc(
+                            transfer.to_hotel.duration
+                        )}
 
-        ${escapeHtml(
-          r.address
-          || ""
-        )}
+                        ·
 
-      </div>
+                        Distance:
+                        ${esc(
+                            transfer.to_hotel.distance
+                        )}
 
-      <div class="muted">
+                    </p>
 
-        ${money(
-          r.estimated_cost_per_adult_try
-        )}
+                    ${
+                        transfer.to_hotel.link
 
-        / adult
+                        ?
 
-        · ★
+                        `
+                        <a
+                            class="map"
+                            target="_blank"
+                            rel="noopener"
+                            href="${esc(
+                                transfer.to_hotel.link
+                            )}"
+                        >
+                            ${t().map}
+                        </a>
+                        `
 
-        ${
-          r.aggregated_rating_10
-          ?? "—"
-        }
+                        :
 
-        /10
+                        ""
+                    }
 
-      </div>
+                </div>
+                `
 
-      ${
-        r.map_url
-          ? `
-            <a
-              href="${escapeHtml(
-                r.map_url
-              )}"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="map-link"
-            >
-              📍 ${t().map}
-            </a>
-          `
-          : ""
-      }
+                :
 
-      ${renderWhy(
-        r.why
-      )}
+                ""
+            }
 
-      <div class="link-row">
 
-        ${sourceButtons(
-          (r.source_urls || [])
-            .map(
-              url => ({
-                url,
-                title:
-                  "OpenStreetMap"
-              })
-            )
-        )}
+            ${
+                transfer.from_hotel
 
-      </div>
+                ?
 
-    </article>
-  `;
+                `
+                <div class="item">
+
+                    <strong>
+                        Hotel →
+                        station / terminal
+                    </strong>
+
+                    <p class="muted">
+
+                        Duration:
+                        ${esc(
+                            transfer.from_hotel.duration
+                        )}
+
+                        ·
+
+                        Distance:
+                        ${esc(
+                            transfer.from_hotel.distance
+                        )}
+
+                    </p>
+
+                    ${
+                        transfer.from_hotel.link
+
+                        ?
+
+                        `
+                        <a
+                            class="map"
+                            target="_blank"
+                            rel="noopener"
+                            href="${esc(
+                                transfer.from_hotel.link
+                            )}"
+                        >
+                            ${t().map}
+                        </a>
+                        `
+
+                        :
+
+                        ""
+                    }
+
+                </div>
+                `
+
+                :
+
+                ""
+            }
+
+
+            ${
+                transfer.arrival_explanation
+
+                ?
+
+                `<p>
+                    ${esc(
+                        transfer.arrival_explanation
+                    )}
+                </p>`
+
+                :
+
+                ""
+            }
+
+
+            ${
+                transfer.departure_explanation
+
+                ?
+
+                `<p>
+                    ${esc(
+                        transfer.departure_explanation
+                    )}
+                </p>`
+
+                :
+
+                ""
+            }
+
+        </div>
+    `;
 }
 
 
 function renderDay(
-  day
+    day
 ) {
 
-  return `
-    <section class="day-card">
+    return `
+        <div class="day">
 
-      <div class="day-head">
+            <div class="row">
 
-        <div>
+                <h3>
+                    Day ${day.day_number}
+                    —
+                    ${esc(
+                        day.day_title
+                    )}
+                </h3>
 
-          <span>
-            Day ${day.day_number}
-          </span>
+                <span class="date">
+                    ${esc(
+                        day.calendar_date
+                    )}
+                </span>
 
-          <h3>
-            ${escapeHtml(
-              day.day_title
-            )}
-          </h3>
+            </div>
+
+
+            <div class="banner">
+
+                ${esc(
+                    day.breakfast_banner
+                )}
+
+            </div>
+
+
+            ${
+                (
+                    day.activities
+                    || []
+                )
+
+                .map(
+                    activity =>
+                        `
+                        <div class="item">
+
+                            <strong>
+
+                                ${esc(
+                                    activity.time_slot
+                                )}
+
+                                ·
+
+                                ${esc(
+                                    activity.place_name
+                                )}
+
+                            </strong>
+
+
+                            <p class="muted">
+
+                                ${esc(
+                                    activity.category
+                                    || ""
+                                )}
+
+                                ·
+
+                                ${esc(
+                                    activity.address
+                                    || ""
+                                )}
+
+                                ·
+
+                                Rating:
+                                ${activity.rating ?? "—"}
+
+                            </p>
+
+
+                            ${
+                                activity.map_url
+
+                                ?
+
+                                `
+                                <a
+                                    class="map"
+                                    target="_blank"
+                                    rel="noopener"
+                                    href="${esc(
+                                        activity.map_url
+                                    )}"
+                                >
+                                    📍
+                                    ${t().map}
+                                </a>
+                                `
+
+                                :
+
+                                ""
+                            }
+
+                        </div>
+                        `
+                )
+
+                .join("")
+            }
+
+
+            ${
+                (
+                    day.restaurants
+                    || []
+                )
+
+                .map(
+                    restaurant =>
+                        `
+                        <div class="item">
+
+                            <strong>
+
+                                ${esc(
+                                    restaurant.meal_type
+                                )}
+
+                                ·
+
+                                ${esc(
+                                    restaurant.restaurant_name
+                                )}
+
+                            </strong>
+
+
+                            <p class="muted">
+
+                                ${esc(
+                                    restaurant.cuisine
+                                    || ""
+                                )}
+
+                                ·
+
+                                ${esc(
+                                    restaurant.address
+                                    || ""
+                                )}
+
+                                ·
+
+                                Rating:
+                                ${restaurant.rating ?? "—"}
+
+                            </p>
+
+
+                            ${
+                                restaurant.map_url
+
+                                ?
+
+                                `
+                                <a
+                                    class="map"
+                                    target="_blank"
+                                    rel="noopener"
+                                    href="${esc(
+                                        restaurant.map_url
+                                    )}"
+                                >
+                                    📍
+                                    ${t().map}
+                                </a>
+                                `
+
+                                :
+
+                                ""
+                            }
+
+                        </div>
+                        `
+                )
+
+                .join("")
+            }
 
         </div>
-
-        <span class="date-badge">
-          ${escapeHtml(
-            day.calendar_date
-          )}
-        </span>
-
-      </div>
-
-      <p class="banner">
-        ${escapeHtml(
-          day.breakfast_banner
-          || ""
-        )}
-      </p>
-
-      <div class="items">
-
-        ${(day.activities || [])
-          .map(
-            renderActivity
-          )
-          .join("")}
-
-      </div>
-
-      <div class="items">
-
-        ${(day.restaurants || [])
-          .map(
-            renderRestaurant
-          )
-          .join("")}
-
-      </div>
-
-    </section>
-  `;
+    `;
 }
 
 
 function render(
-  data
+    data
 ) {
 
-  state.currentData =
-    data;
+    state.currentData =
+        data;
 
-  $("results")
-    .classList
-    .remove("hidden");
-
-  $("emptyState")
-    .classList
-    .add("hidden");
-
-  $("routeTitle")
-    .textContent =
-    `${data.origin_city} → ${data.destination_city}`;
-
-  $("dateTitle")
-    .textContent =
-    `${data.start_date} → ${data.end_date}`;
-
-  $("costTitle")
-    .textContent =
-    money(
-      data.grand_total_trip_cost_try
-    );
-
-  $("resultWarnings")
-    .innerHTML =
-    (data.data_warnings || [])
-      .map(
-        w =>
-          `
-          <div class="warning-box">
-            ⚠️
-            ${escapeHtml(w)}
-          </div>
-          `
-      )
-      .join("");
-
-  $("hotelArea")
-    .innerHTML =
-    renderHotel(
-      data.hotel
-    );
-
-  $("transportArea")
-    .innerHTML =
-    renderTransport(
-      data.transportation
-    );
-
-  $("daysArea")
-    .innerHTML =
-    (
-      data.daily_schedule
-      || []
-    )
-      .map(
-        renderDay
-      )
-      .join("");
-
-  $("sourcesArea")
-    .innerHTML =
-    sourceButtons(
-      data.sources
-      || []
-    );
-}
-
-
-async function submitSearch(
-  e
-) {
-
-  e.preventDefault();
-
-  const btn =
-    $("searchBtn");
-
-  const old =
-    btn.innerHTML;
-
-  btn.disabled =
-    true;
-
-  btn.innerHTML =
-    `
-      <i class="fa-solid fa-spinner fa-spin"></i>
-      ${t().searching}
-    `;
-
-  $("loading")
-    .classList
-    .remove("hidden");
-
-  $("results")
-    .classList
-    .add("hidden");
-
-  try {
-
-    if (
-      !$("start_date").value
-    ) {
-      throw new Error(
-        "Please choose a start date."
-      );
-    }
-
-    if (
-      $("origin").value
-      ===
-      $("destination").value
-    ) {
-      throw new Error(
-        "Departure and destination must be different."
-      );
-    }
-
-    const data =
-      await api(
-        "/api/plan-trip",
-        collectPayload()
-      );
-
-    render(
-      data
-    );
-
-  } catch (err) {
-
-    showToast(
-      err.message
-    );
 
     $("emptyState")
-      .classList
-      .remove("hidden");
+        .classList
+        .add(
+            "hidden"
+        );
 
-  } finally {
 
-    btn.disabled =
-      false;
+    $("results")
+        .classList
+        .remove(
+            "hidden"
+        );
 
-    btn.innerHTML =
-      old;
 
-    $("loading")
-      .classList
-      .add("hidden");
-  }
+    $("routeTitle")
+        .textContent =
+        `${data.origin_city} → ${data.destination_city}`;
+
+
+    $("dateTitle")
+        .textContent =
+        `${data.start_date} → ${data.end_date}`;
+
+
+    $("costTitle")
+        .textContent =
+        fmtPrice(
+            data.grand_total_trip_cost_try
+        );
+
+
+    $("warnings")
+        .innerHTML = (
+            data.data_warnings
+            || []
+        )
+
+            .map(
+                warning =>
+                    `
+                    <div class="warning">
+
+                        ⚠️
+                        ${esc(
+                            warning
+                        )}
+
+                    </div>
+                    `
+            )
+
+            .join("");
+
+
+    $("hotelArea")
+        .innerHTML =
+        renderHotel(
+            data.hotel
+        );
+
+
+    $("transportArea")
+        .innerHTML =
+        renderTransport(
+            data.transportation
+        );
+
+
+    $("transferArea")
+        .innerHTML =
+        renderTransfers(
+            data.transfer_plan
+        );
+
+
+    $("daysArea")
+        .innerHTML = (
+            data.daily_schedule
+            || []
+        )
+
+            .map(
+                renderDay
+            )
+
+            .join("");
+
+
+    $("sources")
+        .innerHTML =
+        sourceLinks(
+            data.sources
+            || []
+        );
 }
 
 
 document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+    "DOMContentLoaded",
+    () => {
 
-    fillCities();
 
-    const tomorrow =
-      new Date();
+        cities.forEach(
+            city => {
 
-    tomorrow.setDate(
-      tomorrow.getDate() + 7
-    );
+                $("origin").add(
+                    new Option(
+                        city,
+                        city
+                    )
+                );
 
-    $("start_date")
-      .value =
-      tomorrow
-        .toISOString()
-        .slice(
-          0,
-          10
+
+                $("destination").add(
+                    new Option(
+                        city,
+                        city
+                    )
+                );
+
+            }
         );
 
-    $("start_date")
-      .min =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
+
+        $("origin").value =
+            "Bursa";
+
+
+        $("destination").value =
+            "İstanbul";
+
+
+        const startDate =
+            new Date();
+
+
+        startDate.setDate(
+            startDate.getDate()
+            + 7
         );
 
-    $("langSelector")
-      .addEventListener(
-        "change",
-        e => {
-          state.lang =
-            e.target.value;
 
-          applyLanguage();
-        }
-      );
+        $("start_date").value =
+            startDate
+                .toISOString()
+                .slice(
+                    0,
+                    10
+                );
 
-    $("tripForm")
-      .addEventListener(
-        "submit",
-        submitSearch
-      );
 
-    $("children_count")
-      .addEventListener(
-        "input",
-        () => {
+        $("start_date").min =
+            new Date()
+                .toISOString()
+                .slice(
+                    0,
+                    10
+                );
 
-          $("childAgeWrap")
-            .classList
-            .toggle(
-              "hidden",
-              Number(
-                $("children_count")
-                  .value || 0
-              ) === 0
+
+        $("children_count")
+            .addEventListener(
+                "input",
+                () => {
+
+                    $("childAgeWrap")
+                        .classList
+                        .toggle(
+
+                            "hidden",
+
+                            Number(
+                                $("children_count")
+                                    .value
+                                    || 0
+                            ) === 0
+
+                        );
+
+                }
             );
 
-        }
-      );
 
-    applyLanguage();
-  }
+        $("langSelector")
+            .addEventListener(
+                "change",
+                event => {
+
+                    state.lang =
+                        event.target.value;
+
+                    applyLanguage();
+
+                }
+            );
+
+
+        $("hotel_min_rating")
+            .addEventListener(
+                "input",
+                event => {
+
+                    $("ratingValue")
+                        .textContent =
+                        event.target.value;
+
+                }
+            );
+
+
+        $("tripForm")
+            .addEventListener(
+                "submit",
+                async event => {
+
+                    event.preventDefault();
+
+
+                    if (
+                        $("origin").value
+                        ===
+                        $("destination").value
+                    ) {
+
+                        alert(
+                            "Departure and destination must be different."
+                        );
+
+                        return;
+
+                    }
+
+
+                    if (
+                        !$("start_date").value
+                    ) {
+
+                        alert(
+                            "Please choose a start date."
+                        );
+
+                        return;
+
+                    }
+
+
+                    $("loading")
+                        .classList
+                        .remove(
+                            "hidden"
+                        );
+
+
+                    $("results")
+                        .classList
+                        .add(
+                            "hidden"
+                        );
+
+
+                    $("searchBtn")
+                        .disabled = true;
+
+
+                    $("searchBtn")
+                        .textContent =
+                        t().searching;
+
+
+                    try {
+
+                        const result =
+                            await api(
+                                "/api/plan-trip",
+                                collectPayload()
+                            );
+
+
+                        render(
+                            result
+                        );
+
+
+                    } catch (
+                        error
+                    ) {
+
+                        $("emptyState")
+                            .classList
+                            .remove(
+                                "hidden"
+                            );
+
+
+                        alert(
+                            error.message
+                        );
+
+
+                    } finally {
+
+                        $("loading")
+                            .classList
+                            .add(
+                                "hidden"
+                            );
+
+
+                        $("searchBtn")
+                            .disabled = false;
+
+
+                        $("searchBtn")
+                            .textContent =
+                            t().search;
+
+                    }
+
+                }
+            );
+
+
+        applyLanguage();
+
+    }
 );

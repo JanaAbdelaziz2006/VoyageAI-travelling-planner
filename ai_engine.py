@@ -1,1076 +1,1579 @@
-import hashlib
 import json
 import os
-import re
-import time
+from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from typing import Any, Dict
 
 import requests
 from dotenv import load_dotenv
 
+from ranking import (
+    rank_hotels,
+    rank_local,
+    rank_transport,
+    distinct_schedule
+)
+
+from search_engine import (
+    SerpApi,
+    SearchError
+)
+
+
 BASE_DIR = Path(__file__).resolve().parent
-CACHE_DIR = BASE_DIR / ".serpapi_cache"
-CACHE_DIR.mkdir(exist_ok=True)
 
-load_dotenv(BASE_DIR / ".env")
-
-SERPAPI_KEY = os.getenv("SERPAPI_KEY", "serpapi").strip()
-SERPAPI_URL = "https://serpapi.com/search.json"
-
-SERPAPI_LOCATION = os.getenv(
-    "SERPAPI_LOCATION",
-    "Turkey"
-)
-
-SERPAPI_HL = os.getenv(
-    "SERPAPI_HL",
-    "en"
-)
-
-SERPAPI_GL = os.getenv(
-    "SERPAPI_GL",
-    "tr"
-)
-
-SERPAPI_CURRENCY = os.getenv(
-    "SERPAPI_CURRENCY",
-    "TRY"
+load_dotenv(
+    BASE_DIR / ".env"
 )
 
 
-class SearchEngineError(Exception):
+GEMINI_KEY = os.getenv(
+    "GEMINI_API_KEY",
+    ""
+).strip()
+
+
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    "gemini-3.6-flash"
+).strip()
+
+
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/"
+    "v1beta/models/"
+    f"{GEMINI_MODEL}:generateContent"
+)
+
+
+class AIPlanError(Exception):
     pass
 
 
-class SerpApiSearchEngine:
+class HybridEngine:
 
     def __init__(self):
-        self.session = requests.Session()
 
-        self.session.headers.update({
-            "User-Agent": (
-                "VoyageAI Travel Planner/1.0"
-            )
-        })
+        self.search = SerpApi()
 
-    # ---------------------------------------------------------
-    # CACHE
-    # ---------------------------------------------------------
 
-    def _cache_file(
+    # =========================================================
+    # OPTIONAL GEMINI
+    # =========================================================
+
+    def _gemini(
         self,
-        prefix: str,
-        params: Dict[str, Any]
-    ) -> Path:
-
-        raw = json.dumps(
-            params,
-            sort_keys=True,
-            ensure_ascii=False
-        )
-
-        digest = hashlib.sha256(
-            raw.encode("utf-8")
-        ).hexdigest()[:32]
-
-        return (
-            CACHE_DIR
-            / f"{prefix}_{digest}.json"
-        )
-
-    def _read_cache(
-        self,
-        path: Path,
-        max_age_seconds: int = 3600
-    ) -> Optional[Dict[str, Any]]:
-
-        try:
-
-            age = (
-                time.time()
-                - path.stat().st_mtime
-            )
-
-            if age > max_age_seconds:
-                return None
-
-            return json.loads(
-                path.read_text(
-                    encoding="utf-8"
-                )
-            )
-
-        except Exception:
-            return None
-
-    def _write_cache(
-        self,
-        path: Path,
-        data: Dict[str, Any]
+        prompt: str
     ):
 
-        try:
+        # Gemini is optional.
+        # Search results remain usable without it.
+        if not GEMINI_KEY:
 
-            path.write_text(
-                json.dumps(
-                    data,
-                    ensure_ascii=False
-                ),
-                encoding="utf-8"
-            )
+            return {}
 
-        except Exception:
-            pass
 
-    # ---------------------------------------------------------
-    # SERPAPI REQUEST
-    # ---------------------------------------------------------
+        payload = {
 
-    def _request(
-        self,
-        params: Dict[str, Any],
-        cache_prefix: str,
-        cache_hours: int = 1
-    ) -> Dict[str, Any]:
+            "contents": [
 
-        if not SERPAPI_KEY:
-            raise SearchEngineError(
-                "SERPAPI_KEY is missing."
-            )
+                {
+                    "parts": [
 
-        request_params = dict(params)
+                        {
+                            "text":
+                                prompt
+                        }
 
-        request_params["api_key"] = (
-            SERPAPI_KEY
-        )
+                    ]
+                }
 
-        request_params.setdefault(
-            "hl",
-            SERPAPI_HL
-        )
+            ],
 
-        request_params.setdefault(
-            "gl",
-            SERPAPI_GL
-        )
+            "generationConfig": {
 
-        cache_path = self._cache_file(
-            cache_prefix,
-            request_params
-        )
+                "temperature":
+                    0.1,
 
-        cached = self._read_cache(
-            cache_path,
-            max_age_seconds=cache_hours * 3600
-        )
+                "responseMimeType":
+                    "application/json"
+            }
+        }
 
-        if cached:
-            return cached
 
         try:
 
-            response = self.session.get(
-                SERPAPI_URL,
-                params=request_params,
+            response = requests.post(
+
+                GEMINI_URL,
+
+                headers={
+
+                    "Content-Type":
+                        "application/json",
+
+                    "x-goog-api-key":
+                        GEMINI_KEY
+                },
+
+                json=payload,
+
                 timeout=90
             )
 
-        except requests.RequestException as exc:
 
-            raise SearchEngineError(
-                f"SerpApi connection error: {exc}"
-            ) from exc
+        except requests.RequestException:
 
-        try:
-            data = response.json()
-        except Exception:
+            # Do not break the travel search
+            # because optional AI is unavailable.
+            return {}
 
-            raise SearchEngineError(
-                f"SerpApi returned invalid JSON "
-                f"(HTTP {response.status_code})."
-            )
-
-        if response.status_code == 401:
-
-            raise SearchEngineError(
-                "SerpApi API key is invalid."
-            )
 
         if response.status_code == 429:
 
-            raise SearchEngineError(
-                "SerpApi rate limit reached. "
-                "The free plan allows a limited number "
-                "of searches per hour."
-            )
+            return {}
+
 
         if response.status_code >= 400:
 
-            raise SearchEngineError(
-                "SerpApi error "
-                f"{response.status_code}: "
-                f"{data.get('error', data)}"
-            )
+            return {}
 
-        if data.get("error"):
 
-            raise SearchEngineError(
-                f"SerpApi error: "
-                f"{data['error']}"
-            )
+        try:
 
-        self._write_cache(
-            cache_path,
-            data
-        )
-
-        return data
-
-    # =========================================================
-    # HOTELS
-    # =========================================================
-
-    def search_hotels(
-        self,
-        destination: str,
-        check_in: str,
-        check_out: str,
-        adults: int,
-        children: int,
-        children_ages: Optional[List[int]],
-        rooms: int,
-        min_rating: float,
-        location_preference: str,
-        amenities: List[str]
-    ) -> List[Dict[str, Any]]:
-
-        query = (
-            f"hotels in {destination}, Turkey"
-        )
-
-        params = {
-            "engine": "google_hotels",
-            "q": query,
-            "check_in_date": check_in,
-            "check_out_date": check_out,
-            "adults": adults,
-            "children": children,
-            "rooms": rooms,
-            "currency": SERPAPI_CURRENCY,
-            "gl": SERPAPI_GL,
-            "hl": SERPAPI_HL,
-            "sort_by": "3",
-        }
-
-        if children > 0 and children_ages:
-            params["children_ages"] = ",".join(
-                str(x)
-                for x in children_ages
-            )
-
-        # Google Hotels rating filter
-        if min_rating >= 9:
-            params["rating"] = "9"
-        elif min_rating >= 8:
-            params["rating"] = "8"
-        elif min_rating >= 7:
-            params["rating"] = "7"
-
-        data = self._request(
-            params,
-            "hotels",
-            cache_hours=1
-        )
-
-        properties = (
-            data.get("properties")
-            or []
-        )
-
-        results = []
-
-        for position, hotel in enumerate(
-            properties,
-            start=1
-        ):
-
-            rate_per_night = self._number(
-                hotel.get(
-                    "rate_per_night",
-                    {}
-                ).get("extracted_lowest")
-            )
-
-            total_rate = self._number(
-                hotel.get(
-                    "total_rate",
-                    {}
-                ).get("extracted_lowest")
-            )
-
-            rating = self._number(
-                hotel.get("overall_rating")
-            )
-
-            if (
-                rating is not None
-                and rating < min_rating
-            ):
-                continue
-
-            amenity_text = " ".join(
-                hotel.get(
-                    "amenities",
-                    []
-                )
-            ).lower()
-
-            # Search/filter requested amenities
-            requested = [
-                str(x).lower()
-                for x in amenities
-            ]
-
-            amenity_match = True
-
-            for required in requested:
-
-                if required in {
-                    "pool",
-                    "beach",
-                    "spa",
-                    "aquapark"
-                }:
-
-                    aliases = {
-                        "pool": [
-                            "pool",
-                            "swimming pool"
-                        ],
-                        "beach": [
-                            "beach",
-                            "private beach",
-                            "beachfront"
-                        ],
-                        "spa": [
-                            "spa",
-                            "sauna",
-                            "turkish bath"
-                        ],
-                        "aquapark": [
-                            "water park",
-                            "aquapark",
-                            "water slide"
-                        ]
-                    }
-
-                    if not any(
-                        alias in amenity_text
-                        for alias in aliases[
-                            required
-                        ]
-                    ):
-                        amenity_match = False
-                        break
-
-            if not amenity_match:
-                continue
-
-            hotel_id = str(
-                hotel.get(
-                    "property_token"
-                    or hotel.get(
-                        "data_id"
-                    )
-                    or position
-                )
-            )
-
-            link = (
-                hotel.get("link")
-                or hotel.get("hotel_link")
-                or ""
-            )
-
-            results.append({
-                "candidate_id": (
-                    f"hotel_{hotel_id}"
-                ),
-                "rank_position": position,
-                "name": (
-                    hotel.get("name")
-                    or ""
-                ),
-                "rating": rating,
-                "reviews": hotel.get(
-                    "reviews"
-                ),
-                "stars": self._number(
-                    hotel.get("hotel_class")
-                ),
-                "price_per_night_try":
-                    rate_per_night,
-                "total_price_try":
-                    total_rate,
-                "currency": SERPAPI_CURRENCY,
-                "amenities":
-                    hotel.get(
-                        "amenities",
-                        []
-                    ),
-                "address":
-                    hotel.get(
-                        "address",
-                        ""
-                    ),
-                "gps":
-                    hotel.get(
-                        "gps_coordinates",
-                        {}
-                    ),
-                "link": link,
-                "images":
-                    hotel.get(
-                        "images",
-                        []
-                    ),
-                "description":
-                    hotel.get(
-                        "description",
-                        ""
-                    ),
-                "source": "Google Hotels via SerpApi",
-            })
-
-        return results
-
-    # =========================================================
-    # LOCAL / MAP SEARCH
-    # =========================================================
-
-    def search_local(
-        self,
-        query: str,
-        location: str,
-        cache_prefix: str
-    ) -> List[Dict[str, Any]]:
-
-        params = {
-            "engine": "google_maps",
-            "type": "search",
-            "q": query,
-            "location": f"{location}, Turkey",
-            "m": 15000,
-            "hl": SERPAPI_HL,
-           "gl": SERPAPI_GL,
-        }
-
-        data = self._request(
-            params,
-            cache_prefix,
-            cache_hours=24
-        )
-
-        rows = (
-            data.get(
-                "local_results"
-            )
-            or []
-        )
-
-        results = []
-
-        for position, item in enumerate(
-            rows,
-            start=1
-        ):
-
-            rating = self._number(
-                item.get("rating")
-            )
-
-            reviews = self._integer(
-                item.get("reviews")
-            )
-
-            price = item.get(
-                "price"
-            )
-
-            gps = item.get(
-                "gps_coordinates"
-            ) or {}
-
-            links = item.get(
-                "links"
-            ) or {}
-
-            results.append({
-                "candidate_id": (
-                    f"local_{cache_prefix}_"
-                    f"{position}_"
-                    f"{item.get('data_id', '')}"
-                ),
-                "rank_position": position,
-                "name": (
-                    item.get("title")
-                    or ""
-                ),
-                "rating": rating,
-                "reviews": reviews,
-                "price": price,
-                "type": (
-                    item.get("type")
-                    or ""
-                ),
-                "address": (
-                    item.get("address")
-                    or ""
-                ),
-                "description": (
-                    item.get("description")
-                    or ""
-                ),
-                "hours": (
-                    item.get("hours")
-                    or ""
-                ),
-                "gps": gps,
-                "website": (
-                    links.get(
-                        "website"
-                    )
-                    if isinstance(
-                        links,
-                        dict
-                    )
-                    else ""
-                ),
-                "place_link": (
-                    item.get(
-                        "link"
-                    )
-                    or ""
-                ),
-                "data_id": (
-                    item.get(
-                        "data_id"
-                    )
-                    or ""
-                ),
-                "source": (
-                    "Google Maps via SerpApi"
-                ),
-            })
-
-        return results
-
-    # =========================================================
-    # RESTAURANTS
-    # =========================================================
-
-    def search_restaurants(
-        self,
-        destination: str,
-        special_notes: str = ""
-    ) -> List[Dict[str, Any]]:
-
-        extra = ""
-
-        if special_notes:
-            extra = (
-                f" {special_notes}"
-            )
-
-        return self.search_local(
-            query=(
-                f"best restaurants in "
-                f"{destination} Turkey"
-                f"{extra}"
-            ),
-            location=destination,
-            cache_prefix="restaurants"
-        )
-
-    # =========================================================
-    # ATTRACTIONS
-    # =========================================================
-
-    def search_attractions(
-        self,
-        destination: str
-    ) -> List[Dict[str, Any]]:
-
-        results = self.search_local(
-            query=(
-                f"best tourist attractions "
-                f"and places to visit in "
-                f"{destination} Turkey"
-            ),
-            location=destination,
-            cache_prefix="attractions"
-        )
-
-        return results
-
-    # =========================================================
-    # TRANSPORT SEARCH
-    # =========================================================
-
-    def search_transport(
-        self,
-        origin: str,
-        destination: str,
-        date: str,
-        mode: str
-    ) -> List[Dict[str, Any]]:
-
-        mode_map = {
-            "Bus": "bus",
-            "Plane": "flight",
-            "Train": "train",
-            "Passenger Ferry": (
-                "passenger ferry"
-            ),
-            "Car Ferry": (
-                "car ferry"
-            ),
-        }
-
-        mode_name = mode_map.get(
-            mode,
-            mode.lower()
-        )
-
-        query = (
-            f"{origin} to {destination} "
-            f"{mode_name} "
-            f"{date} companies prices"
-        )
-
-        params = {
-            "engine": "google",
-            "q": query,
-            "location": (
-                f"{origin}, Turkey"
-            ),
-            "hl": SERPAPI_HL,
-            "gl": SERPAPI_GL,
-            "num": 10,
-        }
-
-        data = self._request(
-            params,
-            "transport",
-            cache_hours=1
-        )
-
-        organic = (
-            data.get(
-                "organic_results"
-            )
-            or []
-        )
-
-        local = (
-            data.get(
-                "local_results"
-            )
-            or []
-        )
-
-        candidates = []
-
-        for position, item in enumerate(
-            organic,
-            start=1
-        ):
-
-            title = (
-                item.get("title")
-                or ""
-            )
-
-            snippet = (
-                item.get("snippet")
-                or ""
-            )
+            body = response.json()
 
             text = (
-                title
-                + " "
-                + snippet
+                body[
+                    "candidates"
+                ][
+                    0
+                ][
+                    "content"
+                ][
+                    "parts"
+                ][
+                    0
+                ][
+                    "text"
+                ]
             )
 
-            company = (
-                self._extract_company(
-                    title,
-                    text,
-                    mode
-                )
-            )
 
-            price = self._extract_price(
+            return json.loads(
                 text
             )
 
-            candidates.append({
-                "candidate_id": (
-                    f"transport_search_{position}"
-                ),
-                "position": position,
-                "company": company,
-                "title": title,
-                "snippet": snippet,
-                "price_try": price,
-                "link": item.get(
-                    "link",
-                    ""
-                ),
-                "source": "Google Search via SerpApi",
-            })
 
-        for position, item in enumerate(
-            local,
+        except Exception:
+
+            return {}
+
+
+    # =========================================================
+    # GOOGLE MAPS URL
+    # =========================================================
+
+    @staticmethod
+    def maps_url(
+        name,
+        city
+    ):
+
+        from urllib.parse import quote
+
+        return (
+            "https://www.google.com/maps/search/"
+            "?api=1&query="
+            + quote(
+                f"{name}, {city}"
+            )
+        )
+
+
+    # =========================================================
+    # MAIN
+    # =========================================================
+
+    def plan(
+        self,
+        data: Dict[str, Any]
+    ):
+
+        start = date.fromisoformat(
+            data[
+                "start_date"
+            ]
+        )
+
+
+        end = (
+            start
+            + timedelta(
+                days=data[
+                    "nights"
+                ]
+            )
+        )
+
+
+        end_date = end.isoformat()
+
+
+        children = data[
+            "children_count"
+        ]
+
+
+        child_ages = (
+
+            [
+                data[
+                    "child_age"
+                ]
+                for _ in range(
+                    children
+                )
+            ]
+
+            if (
+                children
+                and data.get(
+                    "child_age"
+                )
+                is not None
+            )
+
+            else []
+        )
+
+
+        # =====================================================
+        # HOTELS
+        # =====================================================
+
+        hotels = self.search.hotels(
+
+            data[
+                "destination"
+            ],
+
+            start.isoformat(),
+
+            end_date,
+
+            data[
+                "adults_count"
+            ],
+
+            children,
+
+            child_ages,
+
+            data[
+                "rooms_count"
+            ]
+        )
+
+
+        ranked_hotels = rank_hotels(
+
+            hotels,
+
+            data[
+                "amenities"
+            ]
+        )
+
+
+        selected_hotel = (
+
+            ranked_hotels[0]
+
+            if ranked_hotels
+
+            else None
+        )
+
+
+        hotel_warning = ""
+
+
+        if selected_hotel:
+
+            requested = data[
+                "amenities"
+            ]
+
+
+            matched = selected_hotel.get(
+                "amenity_matches",
+                0
+            )
+
+
+            if (
+                requested
+                and matched
+                < len(requested)
+            ):
+
+                hotel_warning = (
+
+                    "Not all requested hotel features "
+                    "were available together in the "
+                    "verified search results. The system "
+                    "selected the highest-ranked practical "
+                    "match instead of inventing a hotel."
+                )
+
+
+        # =====================================================
+        # RESTAURANTS
+        # =====================================================
+
+        restaurants = self.search.local(
+
+            (
+                "best restaurants in "
+                f"{data['destination']} Turkey"
+            ),
+
+            data[
+                "destination"
+            ],
+
+            "restaurants"
+        )
+
+
+        ranked_restaurants = rank_local(
+            restaurants
+        )
+
+
+        # =====================================================
+        # ATTRACTIONS
+        # =====================================================
+
+        places = self.search.local(
+
+            (
+                "best tourist attractions "
+                "and places to visit in "
+                f"{data['destination']} Turkey"
+            ),
+
+            data[
+                "destination"
+            ],
+
+            "attractions"
+        )
+
+
+        ranked_places = rank_local(
+            places
+        )
+
+
+        # =====================================================
+        # TRANSPORT
+        # =====================================================
+
+        transport_mode = data[
+            "transport_mode"
+        ]
+
+
+        transport_candidates = []
+
+        transport_feasible = True
+
+        transport_warning = ""
+
+        directions_summary = None
+
+
+        if transport_mode in {
+
+            "Bus",
+            "Train",
+            "Passenger Ferry",
+            "Car Ferry"
+
+        }:
+
+            preference = {
+
+                "Bus":
+                    "bus",
+
+                "Train":
+                    "train",
+
+                "Passenger Ferry":
+                    None,
+
+                "Car Ferry":
+                    None
+
+            }.get(
+                transport_mode
+            )
+
+
+            # First check whether the requested
+            # transport type is actually possible.
+            directions = self.search.directions(
+
+                (
+                    data["origin"]
+                    + ", Turkey"
+                ),
+
+                (
+                    data["destination"]
+                    + ", Turkey"
+                ),
+
+                prefer=preference,
+
+                travel_mode="3"
+            )
+
+
+            directions_summary = (
+                self.search.directions_summary(
+                    directions
+                )
+            )
+
+
+            if not directions_summary:
+
+                transport_feasible = False
+
+                transport_warning = (
+
+                    f"No verified {transport_mode.lower()} "
+                    f"route was returned for "
+                    f"{data['origin']} → "
+                    f"{data['destination']}."
+                )
+
+
+            if transport_feasible:
+
+                transport_candidates = (
+
+                    self.search.google_search(
+
+                        (
+                            f"{data['origin']} to "
+                            f"{data['destination']} "
+                            f"{transport_mode} "
+                            f"{start.isoformat()} "
+                            "companies tickets"
+                        ),
+
+                        (
+                            "transport_"
+                            + transport_mode
+                        ),
+
+                        10
+                    )
+                )
+
+
+        elif transport_mode == "Plane":
+
+            transport_candidates = (
+
+                self.search.google_search(
+
+                    (
+                        f"{data['origin']} to "
+                        f"{data['destination']} "
+                        f"flight airlines "
+                        f"{start.isoformat()}"
+                    ),
+
+                    "transport_plane",
+
+                    10
+                )
+            )
+
+
+        transport_ranked = rank_transport(
+            transport_candidates
+        )
+
+
+        selected_transport = (
+
+            transport_ranked[0]
+
+            if (
+                transport_ranked
+            )
+
+            else None
+        )
+
+
+        if (
+            transport_feasible
+            and not selected_transport
+            and transport_mode
+            not in {
+                "Own Car",
+                "Own EV"
+            }
+        ):
+
+            transport_warning = (
+
+                "The route appears feasible, "
+                "but a specific operator could "
+                "not be verified from the current "
+                "search results."
+            )
+
+
+        # =====================================================
+        # HOTEL TRANSFER ROUTES
+        # =====================================================
+
+        to_hotel = None
+
+        from_hotel = None
+
+
+        if selected_hotel:
+
+            hotel_target = (
+
+                selected_hotel.get(
+                    "address"
+                )
+
+                or selected_hotel.get(
+                    "name"
+                )
+
+                + ", "
+                + data[
+                    "destination"
+                ]
+                + ", Turkey"
+            )
+
+
+            terminal_name = {
+
+                "Bus":
+                    (
+                        "main intercity bus "
+                        "station "
+                    ),
+
+                "Train":
+                    (
+                        "main railway station "
+                    ),
+
+                "Passenger Ferry":
+                    (
+                        "passenger ferry terminal "
+                    ),
+
+                "Car Ferry":
+                    (
+                        "car ferry terminal "
+                    ),
+
+                "Plane":
+                    (
+                        "main airport "
+                    )
+
+            }.get(
+
+                transport_mode,
+
+                "main transport terminal "
+            )
+
+
+            terminal_target = (
+
+                terminal_name
+                + data[
+                    "destination"
+                ]
+                + ", Turkey"
+            )
+
+
+            preference = (
+
+                "bus,subway,train"
+
+                if transport_mode
+                in {
+                    "Bus",
+                    "Train"
+                }
+
+                else None
+            )
+
+
+            to_hotel_data = (
+                self.search.directions(
+
+                    terminal_target,
+
+                    hotel_target,
+
+                    prefer=preference,
+
+                    travel_mode="3"
+                )
+            )
+
+
+            from_hotel_data = (
+                self.search.directions(
+
+                    hotel_target,
+
+                    terminal_target,
+
+                    prefer=preference,
+
+                    travel_mode="3"
+                )
+            )
+
+
+            to_hotel = (
+                self.search.directions_summary(
+                    to_hotel_data
+                )
+            )
+
+
+            from_hotel = (
+                self.search.directions_summary(
+                    from_hotel_data
+                )
+            )
+
+
+        # =====================================================
+        # DAILY SCHEDULE
+        # =====================================================
+
+        day_pairs = distinct_schedule(
+
+            ranked_places,
+
+            ranked_restaurants,
+
+            data[
+                "nights"
+            ]
+        )
+
+
+        daily_schedule = []
+
+
+        for day_number, (
+            day_places,
+            day_restaurants
+        ) in enumerate(
+
+            day_pairs,
+
             start=1
         ):
 
-            candidates.append({
-                "candidate_id": (
-                    f"transport_local_{position}"
-                ),
-                "position": position,
-                "company": (
-                    item.get(
-                        "title"
-                    )
-                    or ""
-                ),
-                "title": (
-                    item.get(
-                        "title"
-                    )
-                    or ""
-                ),
-                "snippet": (
-                    item.get(
-                        "description"
-                    )
-                    or ""
-                ),
-                "price_try": self._number(
-                    item.get(
-                        "price"
-                    )
-                ),
-                "link": (
-                    item.get(
-                        "link"
-                    )
-                    or ""
-                ),
-                "source": "Google Maps via SerpApi",
+            calendar_date = (
+
+                start
+                + timedelta(
+                    days=day_number - 1
+                )
+            ).isoformat()
+
+
+            activities = []
+
+
+            for index, place in enumerate(
+                day_places
+            ):
+
+                activities.append({
+
+                    "candidate_id":
+                        place[
+                            "candidate_id"
+                        ],
+
+                    "time_slot":
+                        (
+                            "10:00"
+                            if index == 0
+                            else "15:00"
+                        ),
+
+                    "place_name":
+                        place[
+                            "name"
+                        ],
+
+                    "category":
+                        place.get(
+                            "type",
+                            ""
+                        ),
+
+                    "address":
+                        place.get(
+                            "address",
+                            ""
+                        ),
+
+                    "rating":
+                        place.get(
+                            "rating"
+                        ),
+
+                    "reviews":
+                        place.get(
+                            "reviews"
+                        ),
+
+                    "map_url":
+                        (
+                            place.get(
+                                "link"
+                            )
+                            or
+                            self.maps_url(
+                                place[
+                                    "name"
+                                ],
+
+                                data[
+                                    "destination"
+                                ]
+                            )
+                        ),
+
+                    "source_url":
+                        place.get(
+                            "link",
+                            ""
+                        )
+                })
+
+
+            restaurant_results = []
+
+
+            for restaurant in day_restaurants:
+
+                restaurant_results.append({
+
+                    "candidate_id":
+                        restaurant[
+                            "candidate_id"
+                        ],
+
+                    "meal_type":
+                        "Lunch",
+
+                    "restaurant_name":
+                        restaurant[
+                            "name"
+                        ],
+
+                    "cuisine":
+                        restaurant.get(
+                            "type",
+                            ""
+                        ),
+
+                    "address":
+                        restaurant.get(
+                            "address",
+                            ""
+                        ),
+
+                    "rating":
+                        restaurant.get(
+                            "rating"
+                        ),
+
+                    "reviews":
+                        restaurant.get(
+                            "reviews"
+                        ),
+
+                    "price_level":
+                        restaurant.get(
+                            "price_level"
+                        ),
+
+                    "map_url":
+                        (
+                            restaurant.get(
+                                "link"
+                            )
+                            or
+                            self.maps_url(
+                                restaurant[
+                                    "name"
+                                ],
+
+                                data[
+                                    "destination"
+                                ]
+                            )
+                        ),
+
+                    "source_url":
+                        restaurant.get(
+                            "link",
+                            ""
+                        )
+                })
+
+
+            daily_schedule.append({
+
+                "day_number":
+                    day_number,
+
+                "calendar_date":
+                    calendar_date,
+
+                "day_title":
+                    (
+                        f"Day {day_number} "
+                        f"in "
+                        f"{data['destination']}"
+                    ),
+
+                "breakfast_banner":
+                    (
+                        "Breakfast according to "
+                        "the selected meal plan."
+                    ),
+
+                "lunch_banner":
+                    (
+                        "Lunch at the recommended "
+                        "ranked restaurant."
+                    ),
+
+                "dinner_banner":
+                    (
+                        "Dinner according to "
+                        "the selected meal plan."
+                    ),
+
+                "activities":
+                    activities,
+
+                "restaurants":
+                    restaurant_results
             })
 
-        return candidates
 
-    # =========================================================
-    # HELPERS
-    # =========================================================
+        # =====================================================
+        # OPTIONAL GEMINI EXPLANATIONS / TRANSLATION
+        # =====================================================
 
-    @staticmethod
-    def _number(
-        value: Any
-    ) -> Optional[float]:
+        ai = {}
 
-        if value is None:
-            return None
 
-        try:
-            return float(value)
-        except (
-            ValueError,
-            TypeError
-        ):
-            return None
+        if GEMINI_KEY:
 
-    @staticmethod
-    def _integer(
-        value: Any
-    ) -> Optional[int]:
+            language = {
 
-        if value is None:
-            return None
+                "tr":
+                    "Turkish",
 
-        if isinstance(
-            value,
-            int
-        ):
-            return value
+                "en":
+                    "English",
 
-        if isinstance(
-            value,
-            float
-        ):
-            return int(value)
+                "ar":
+                    "Arabic"
 
-        match = re.search(
-            r"\d[\d,]*",
-            str(value)
-        )
+            }.get(
 
-        if not match:
-            return None
+                data.get(
+                    "language"
+                ),
 
-        try:
-            return int(
-                match.group(
-                    0
-                ).replace(
-                    ",",
-                    ""
-                )
-            )
-        except ValueError:
-            return None
-
-    @staticmethod
-    def _extract_price(
-        text: str
-    ) -> Optional[float]:
-
-        if not text:
-            return None
-
-        patterns = [
-            r"(\d[\d,.]*)\s*(?:₺|TRY|TL)",
-            r"TRY\s*(\d[\d,.]*)",
-            r"TL\s*(\d[\d,.]*)",
-        ]
-
-        for pattern in patterns:
-
-            match = re.search(
-                pattern,
-                text,
-                flags=re.IGNORECASE
+                "English"
             )
 
-            if not match:
-                continue
 
-            raw = (
-                match.group(1)
-                .replace(
-                    ",",
-                    ""
-                )
+            prompt = f"""
+
+You are the explanation and translation layer
+of VoyageAI.
+
+IMPORTANT:
+All data below was already collected from
+SerpApi.
+
+You MUST NOT invent:
+- hotel names
+- restaurant names
+- attraction names
+- transport companies
+- prices
+- ratings
+- addresses
+- opening hours
+- routes
+- URLs
+- airport names
+- station names
+
+You may only:
+1. Explain the supplied facts.
+2. Explain why the selected candidate ranked highly.
+3. Translate explanatory text into {language}.
+4. Organize the information into a clear travel plan.
+
+If information is missing, say it is unavailable.
+
+DATA:
+
+{json.dumps({
+
+    "hotel":
+        selected_hotel,
+
+    "transport":
+        selected_transport,
+
+    "transport_feasible":
+        transport_feasible,
+
+    "transport_warning":
+        transport_warning,
+
+    "daily_schedule":
+        daily_schedule,
+
+    "hotel_warning":
+        hotel_warning,
+
+    "to_hotel":
+        to_hotel,
+
+    "from_hotel":
+        from_hotel
+
+}, ensure_ascii=False)}
+
+Return JSON only:
+
+{{
+    "hotel_explanation": "",
+    "transport_explanation": "",
+    "arrival_transfer_explanation": "",
+    "departure_transfer_explanation": "",
+    "daily_explanations": []
+}}
+"""
+
+
+            ai = self._gemini(
+                prompt
             )
 
-            try:
-                return float(
-                    raw
-                )
-            except ValueError:
-                continue
 
-        return None
+        # =====================================================
+        # WARNINGS
+        # =====================================================
 
-    @staticmethod
-    def _extract_company(
-        title: str,
-        text: str,
-        mode: str
-    ) -> str:
+        warnings = []
 
-        known = [
-            "Kamil Koç",
-            "Metro Turizm",
-            "Pamukkale",
-            "FlixBus",
-            "Pegasus",
-            "Turkish Airlines",
-            "AJet",
-            "TCDD",
-            "İDO",
-            "BUDO",
-            "GESTAŞ",
-            "Obilet",
-        ]
 
-        combined = (
-            title
-            + " "
-            + text
-        ).lower()
+        if hotel_warning:
 
-        for company in known:
+            warnings.append(
+                hotel_warning
+            )
 
-            if company.lower() in combined:
-                return company
 
-        return (
-            title[:100]
-            if title
-            else "Unknown operator"
-        )
+        if not selected_hotel:
 
-    # =========================================================
-    # SCORE / RANK
-    # =========================================================
+            warnings.append(
 
-    @staticmethod
-    def hotel_score(
-        hotel: Dict[str, Any],
-        min_rating: float,
-        requested_amenities: List[str]
-    ) -> float:
+                "No hotel candidate was "
+                "returned from Google Hotels."
+            )
 
-        score = 0.0
 
-        rating = (
-            hotel.get("rating")
-            or 0
-        )
+        if not transport_feasible:
 
-        price = (
-            hotel.get(
+            warnings.append(
+                transport_warning
+            )
+
+
+        elif (
+            transport_mode
+            not in {
+                "Own Car",
+                "Own EV"
+            }
+            and not selected_transport
+        ):
+
+            warnings.append(
+
+                "No specific transport company "
+                "could be verified."
+            )
+
+
+        if (
+            selected_hotel
+            and
+            selected_hotel.get(
+                "total_price_try"
+            ) is None
+        ):
+
+            warnings.append(
+
+                "The selected hotel's current "
+                "total price was not returned by "
+                "the provider. No price was invented."
+            )
+
+
+        if (
+            selected_transport
+            and
+            selected_transport.get(
+                "price_try"
+            ) is None
+        ):
+
+            warnings.append(
+
+                "The selected transport company "
+                "was found, but a current ticket price "
+                "was not returned by the provider."
+            )
+
+
+        # =====================================================
+        # COST
+        # =====================================================
+
+        hotel_total = (
+
+            selected_hotel.get(
                 "total_price_try"
             )
+
+            if selected_hotel
+
+            else None
         )
 
-        reviews = (
-            hotel.get("reviews")
-            or 0
-        )
 
-        if rating >= min_rating:
-            score += (
-                40
-                + rating * 5
-            )
-        else:
-            score -= 100
+        transport_price = (
 
-        if price is not None:
-            # Cheaper gets better score
-            score += max(
-                0,
-                30_000
-                / max(
-                    price,
-                    1
-                )
-            )
-
-        score += min(
-            reviews / 100,
-            10
-        )
-
-        amenities_text = (
-            " ".join(
-                hotel.get(
-                    "amenities",
-                    []
-                )
-            ).lower()
-        )
-
-        for amenity in requested_amenities:
-
-            aliases = {
-                "pool": [
-                    "pool",
-                    "swimming"
-                ],
-                "beach": [
-                    "beach",
-                    "beachfront"
-                ],
-                "spa": [
-                    "spa",
-                    "sauna"
-                ],
-                "aquapark": [
-                    "water park",
-                    "water slide",
-                    "aquapark"
-                ]
-            }
-
-            terms = aliases.get(
-                amenity,
-                [amenity]
-            )
-
-            if any(
-                x in amenities_text
-                for x in terms
-            ):
-                score += 12
-
-        return score
-
-    @staticmethod
-    def local_score(
-        item: Dict[str, Any]
-    ) -> float:
-
-        rating = (
-            item.get("rating")
-            or 0
-        )
-
-        reviews = (
-            item.get("reviews")
-            or 0
-        )
-
-        return (
-            rating * 10
-            + min(
-                reviews / 100,
-                15
-            )
-        )
-
-    @staticmethod
-    def transport_score(
-        item: Dict[str, Any]
-    ) -> float:
-
-        price = (
-            item.get(
+            selected_transport.get(
                 "price_try"
             )
+
+            if selected_transport
+
+            else None
         )
 
-        score = 0.0
 
-        if price is not None:
-            score += (
-                10_000
-                / max(
-                    price,
-                    1
-                )
+        grand_total = None
+
+
+        values = [
+
+            hotel_total,
+
+            transport_price
+        ]
+
+
+        numeric_values = [
+
+            value
+
+            for value in values
+
+            if isinstance(
+                value,
+                (int, float)
+            )
+        ]
+
+
+        if numeric_values:
+
+            grand_total = sum(
+                numeric_values
             )
 
-        # Google result position is weak evidence,
-        # so it only receives a small bonus.
-        position = (
-            item.get(
-                "position"
+
+        # =====================================================
+        # SOURCES
+        # =====================================================
+
+        sources = []
+
+
+        if (
+            selected_hotel
+            and selected_hotel.get(
+                "link"
             )
-            or 50
-        )
+        ):
 
-        score += max(
-            0,
-            10 - position * 0.2
-        )
+            sources.append({
 
-        return score
+                "title":
+                    selected_hotel[
+                        "name"
+                    ],
+
+                "url":
+                    selected_hotel[
+                        "link"
+                    ]
+            })
+
+
+        for place in ranked_places[:10]:
+
+            if place.get(
+                "link"
+            ):
+
+                sources.append({
+
+                    "title":
+                        place.get(
+                            "name",
+                            "Place"
+                        ),
+
+                    "url":
+                        place[
+                            "link"
+                        ]
+                })
+
+
+        for restaurant in ranked_restaurants[:10]:
+
+            if restaurant.get(
+                "link"
+            ):
+
+                sources.append({
+
+                    "title":
+                        restaurant.get(
+                            "name",
+                            "Restaurant"
+                        ),
+
+                    "url":
+                        restaurant[
+                            "link"
+                        ]
+                })
+
+
+        if (
+            selected_transport
+            and
+            selected_transport.get(
+                "link"
+            )
+        ):
+
+            sources.append({
+
+                "title":
+                    (
+                        selected_transport.get(
+                            "company"
+                        )
+                        or
+                        selected_transport.get(
+                            "title"
+                        )
+                        or
+                        "Transport"
+                    ),
+
+                "url":
+                    selected_transport[
+                        "link"
+                    ]
+            })
+
+
+        # =====================================================
+        # FINAL RESULT
+        # =====================================================
+
+        return {
+
+            "origin_city":
+                data[
+                    "origin"
+                ],
+
+            "destination_city":
+                data[
+                    "destination"
+                ],
+
+            "start_date":
+                start.isoformat(),
+
+            "end_date":
+                end_date,
+
+            "adults_count":
+                data[
+                    "adults_count"
+                ],
+
+            "children_count":
+                data[
+                    "children_count"
+                ],
+
+            "rooms_count":
+                data[
+                    "rooms_count"
+                ],
+
+            "total_travelers":
+
+                (
+                    data[
+                        "adults_count"
+                    ]
+                    +
+                    data[
+                        "children_count"
+                    ]
+                ),
+
+            "meal_board":
+                data[
+                    "meal_board"
+                ],
+
+            "grand_total_trip_cost_try":
+                grand_total,
+
+
+            "hotel": {
+
+                "name":
+                    (
+                        selected_hotel.get(
+                            "name",
+                            ""
+                        )
+                        if selected_hotel
+                        else ""
+                    ),
+
+                "rating":
+                    (
+                        selected_hotel.get(
+                            "rating"
+                        )
+                        if selected_hotel
+                        else None
+                    ),
+
+                "reviews":
+                    (
+                        selected_hotel.get(
+                            "reviews"
+                        )
+                        if selected_hotel
+                        else None
+                    ),
+
+                "stars":
+                    (
+                        selected_hotel.get(
+                            "stars"
+                        )
+                        if selected_hotel
+                        else None
+                    ),
+
+                "price_per_room_per_night_try":
+                    (
+                        selected_hotel.get(
+                            "price_per_night_try"
+                        )
+                        if selected_hotel
+                        else None
+                    ),
+
+                "total_hotel_cost_try":
+                    hotel_total,
+
+                "amenities":
+                    (
+                        selected_hotel.get(
+                            "amenities",
+                            []
+                        )
+                        if selected_hotel
+                        else []
+                    ),
+
+                "address":
+                    (
+                        selected_hotel.get(
+                            "address",
+                            ""
+                        )
+                        if selected_hotel
+                        else ""
+                    ),
+
+                "link":
+                    (
+                        selected_hotel.get(
+                            "link",
+                            ""
+                        )
+                        if selected_hotel
+                        else ""
+                    ),
+
+                "verified":
+                    bool(
+                        selected_hotel
+                    ),
+
+                "ranking_score":
+                    (
+                        selected_hotel.get(
+                            "ranking_score"
+                        )
+                        if selected_hotel
+                        else None
+                    ),
+
+                "why":
+                    ai.get(
+                        "hotel_explanation",
+                        ""
+                    )
+            },
+
+
+            "transportation": {
+
+                "mode":
+                    transport_mode,
+
+                "verified_route":
+                    transport_feasible,
+
+                "company":
+                    (
+                        selected_transport.get(
+                            "company",
+                            ""
+                        )
+                        if selected_transport
+                        else ""
+                    ),
+
+                "title":
+                    (
+                        selected_transport.get(
+                            "title",
+                            ""
+                        )
+                        if selected_transport
+                        else ""
+                    ),
+
+                "snippet":
+                    (
+                        selected_transport.get(
+                            "snippet",
+                            ""
+                        )
+                        if selected_transport
+                        else ""
+                    ),
+
+                "price_try":
+                    transport_price,
+
+                "link":
+                    (
+                        selected_transport.get(
+                            "link",
+                            ""
+                        )
+                        if selected_transport
+                        else ""
+                    ),
+
+                "verified_operator":
+                    bool(
+                        selected_transport
+                    ),
+
+                "why":
+                    ai.get(
+                        "transport_explanation",
+                        ""
+                    ),
+
+                "feasibility_warning":
+                    transport_warning
+            },
+
+
+            "transfer_plan": {
+
+                "to_hotel":
+                    to_hotel,
+
+                "from_hotel":
+                    from_hotel,
+
+                "arrival_explanation":
+                    ai.get(
+                        "arrival_transfer_explanation",
+                        ""
+                    ),
+
+                "departure_explanation":
+                    ai.get(
+                        "departure_transfer_explanation",
+                        ""
+                    )
+            },
+
+
+            "daily_schedule":
+                daily_schedule,
+
+
+            "departure_day_buffer": {
+
+                "checkout_time":
+                    (
+                        selected_hotel.get(
+                            "check_out_time"
+                        )
+                        if selected_hotel
+                        else "12:00"
+                    ),
+
+                "return_departure_time":
+                    "",
+
+                "arrival_at_home_time":
+                    "",
+
+                "explanation":
+                    (
+                        "Exact return timing is shown "
+                        "only when a verified departure "
+                        "time is available."
+                    )
+            },
+
+
+            "cost_breakdown": {
+
+                "hotel_total_try":
+                    hotel_total,
+
+                "transport_total_try":
+                    transport_price,
+
+                "food_budget_total_try":
+                    None,
+
+                "activities_and_transfers_try":
+                    None,
+
+                "grand_total_try":
+                    grand_total
+            },
+
+
+            "sources":
+                sources,
+
+
+            "data_warnings":
+                list(
+                    dict.fromkeys(
+                        warnings
+                    )
+                ),
+
+
+            "candidate_counts": {
+
+                "hotels":
+                    len(
+                        hotels
+                    ),
+
+                "restaurants":
+                    len(
+                        restaurants
+                    ),
+
+                "places":
+                    len(
+                       places
+                    ),
+
+                "transport":
+                    len(
+                        transport_candidates
+                    )
+            }
+        }

@@ -10,38 +10,33 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>VoyageAI — Travel Searcher</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
+    <title>
+        VoyageAI — Hybrid Travel Planner
+    </title>
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=6.0.0"
+        href="/static/css/style.css?v=7.0.0"
     >
 
 </head>
 
 
-<body class="bg-slate-950 text-white min-h-screen">
+<body>
 
 
-<header class="border-b border-slate-800 bg-slate-900">
+<header>
 
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="container header">
 
         <div>
 
-            <h1 class="text-2xl font-black text-sky-400">
+            <h1>
                 VoyageAI
             </h1>
 
-            <p class="text-xs text-slate-400">
-                Real travel search and ranking
+            <p>
+                Real travel search + ranking + planning
             </p>
 
         </div>
@@ -49,7 +44,6 @@
 
         <select
             id="langSelector"
-            class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"
         >
 
             <option value="tr">
@@ -71,606 +65,571 @@
 </header>
 
 
-<main class="max-w-7xl mx-auto p-4">
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<main class="container grid">
 
 
-        <!-- FORM -->
+    <!-- FORM -->
 
-        <section class="lg:col-span-4">
+    <section class="card">
 
-            <form
-                id="tripForm"
-                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4"
-            >
+        <form id="tripForm">
 
-                <h2
-                    class="font-bold text-lg"
-                    data-i18n="title"
+            <h2>
+                Trip Search
+            </h2>
+
+
+            <div class="two">
+
+
+                <label>
+
+                    Departure
+
+                    <select
+                        id="origin"
+                        class="input"
+                        required
+                    ></select>
+
+                </label>
+
+
+                <label>
+
+                    Destination
+
+                    <select
+                        id="destination"
+                        class="input"
+                        required
+                    ></select>
+
+                </label>
+
+            </div>
+
+
+            <label>
+
+                Start date
+
+                <input
+                    id="start_date"
+                    type="date"
+                    class="input"
+                    required
                 >
-                    VoyageAI
-                </h2>
+
+            </label>
 
 
-                <div class="grid grid-cols-2 gap-3">
-
-                    <div>
-
-                        <label
-                            class="text-xs text-slate-400"
-                        >
-                            Departure
-                        </label>
-
-                        <select
-                            id="origin"
-                            required
-                            class="input"
-                        ></select>
-
-                    </div>
+            <div class="four">
 
 
-                    <div>
+                <label>
 
-                        <label
-                            class="text-xs text-slate-400"
-                        >
-                            Destination
-                        </label>
-
-                        <select
-                            id="destination"
-                            required
-                            class="input"
-                        ></select>
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label class="label">
-                        Start date
-                    </label>
+                    Adults
 
                     <input
-                        id="start_date"
-                        type="date"
-                        required
+                        id="adults_count"
+                        type="number"
+                        min="1"
+                        max="15"
+                        value="2"
                         class="input"
                     >
 
-                </div>
+                </label>
 
 
-                <div class="grid grid-cols-4 gap-2">
+                <label>
 
-                    <div>
+                    Children
 
-                        <label class="label">
-                            Adults
-                        </label>
+                    <input
+                        id="children_count"
+                        type="number"
+                        min="0"
+                        max="8"
+                        value="0"
+                        class="input"
+                    >
 
-                        <input
-                            id="adults_count"
-                            type="number"
-                            value="2"
-                            min="1"
-                            max="15"
-                            class="input"
-                        >
-
-                    </div>
+                </label>
 
 
-                    <div>
+                <label>
 
-                        <label class="label">
-                            Children
-                        </label>
+                    Rooms
 
-                        <input
-                            id="children_count"
-                            type="number"
-                            value="0"
-                            min="0"
-                            max="8"
-                            class="input"
-                        >
+                    <select
+                        id="rooms_count"
+                        class="input"
+                    >
 
-                    </div>
+                        <option value="1">
+                            1
+                        </option>
 
+                        <option value="2">
+                            2
+                        </option>
 
-                    <div>
+                        <option value="3">
+                            3
+                        </option>
 
-                        <label class="label">
-                            Rooms
-                        </label>
+                        <option value="4">
+                            4
+                        </option>
 
-                        <select
-                            id="rooms_count"
-                            class="input"
-                        >
+                    </select>
 
-                            <option value="1">
-                                1
-                            </option>
-
-                            <option value="2">
-                                2
-                            </option>
-
-                            <option value="3">
-                                3
-                            </option>
-
-                            <option value="4">
-                                4
-                            </option>
-
-                        </select>
-
-                    </div>
+                </label>
 
 
-                    <div>
+                <label>
 
-                        <label class="label">
-                            Nights
-                        </label>
+                    Nights
 
-                        <input
-                            id="nights"
-                            type="number"
-                            value="3"
-                            min="1"
-                            max="20"
-                            class="input"
-                        >
+                    <input
+                        id="nights"
+                        type="number"
+                        min="1"
+                        max="20"
+                        value="3"
+                        class="input"
+                    >
 
-                    </div>
-
-                </div>
+                </label>
 
 
-                <div
-                    id="childAgeWrap"
-                    class="hidden"
-                >
+            </div>
 
-                    <label class="label">
-                        Child age
-                    </label>
+
+            <div
+                id="childAgeWrap"
+                class="hidden"
+            >
+
+                <label>
+
+                    Child age
 
                     <input
                         id="child_age"
                         type="number"
-                        value="10"
-                        min="0"
+                        min="1"
                         max="17"
+                        value="10"
                         class="input"
                     >
 
-                </div>
+                </label>
+
+            </div>
 
 
-                <div>
+            <label>
 
-                    <label class="label">
-                        Transport
-                    </label>
+                Transport
 
-                    <select
-                        id="transport_mode"
-                        class="input"
-                    >
+                <select
+                    id="transport_mode"
+                    class="input"
+                >
 
-                        <option value="Bus">
-                            Bus
-                        </option>
+                    <option value="Bus">
+                        Bus
+                    </option>
 
-                        <option value="Plane">
-                            Plane
-                        </option>
+                    <option value="Plane">
+                        Plane
+                    </option>
 
-                        <option value="Train">
-                            Train
-                        </option>
+                    <option value="Train">
+                        Train
+                    </option>
 
-                        <option value="Passenger Ferry">
-                            Passenger Ferry
-                        </option>
+                    <option value="Passenger Ferry">
+                        Passenger Ferry
+                    </option>
 
-                        <option value="Car Ferry">
-                            Car Ferry
-                        </option>
+                    <option value="Car Ferry">
+                        Car Ferry
+                    </option>
 
-                        <option value="Own Car">
-                            Own Car
-                        </option>
+                    <option value="Own Car">
+                        Own Car
+                    </option>
 
-                        <option value="Own EV">
-                            Own EV
-                        </option>
+                    <option value="Own EV">
+                        Own EV
+                    </option>
 
-                    </select>
+                </select>
 
-                </div>
+            </label>
 
 
-                <div>
+            <label>
 
-                    <label class="label">
-                        Budget
-                    </label>
+                Budget strategy
 
-                    <select
-                        id="budget_mode"
-                        class="input"
-                    >
+                <select
+                    id="budget_mode"
+                    class="input"
+                >
 
-                        <option value="cheapest_best">
-                            Best + Cheapest
-                        </option>
+                    <option value="cheapest_best">
+                        Best + Cheapest
+                    </option>
 
-                        <option value="custom">
-                            Custom budget
-                        </option>
+                    <option value="custom">
+                        Custom budget
+                    </option>
 
-                    </select>
+                </select>
 
-                </div>
+            </label>
 
 
-                <div>
+            <label>
+
+                Budget TRY
+
+                <input
+                    id="budget_amount_try"
+                    type="number"
+                    min="0"
+                    class="input"
+                    placeholder="Optional"
+                >
+
+            </label>
+
+
+            <label>
+
+                Minimum hotel rating
+
+                <input
+                    id="hotel_min_rating"
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value="8"
+                    class="input"
+                >
+
+                <span id="ratingValue">
+                    8
+                </span>
+
+            </label>
+
+
+            <label>
+
+                Hotel location
+
+                <select
+                    id="hotel_location"
+                    class="input"
+                >
+
+                    <option value="city_center">
+                        City center
+                    </option>
+
+                    <option value="near_sea">
+                        Near sea
+                    </option>
+
+                    <option value="nature">
+                        Nature / mountain
+                    </option>
+
+                    <option value="quiet">
+                        Quiet area
+                    </option>
+
+                </select>
+
+            </label>
+
+
+            <fieldset>
+
+                <legend>
+                    Hotel amenities
+                </legend>
+
+
+                <label>
 
                     <input
-                        id="budget_amount_try"
-                        type="number"
-                        placeholder="Budget TRY"
-                        class="input"
+                        type="checkbox"
+                        name="amenity"
+                        value="pool"
+                        checked
                     >
 
-                </div>
+                    Pool
+
+                </label>
 
 
-                <div>
-
-                    <label class="label">
-                        Minimum hotel rating
-                    </label>
+                <label>
 
                     <input
-                        id="hotel_min_rating"
-                        type="number"
-                        value="8"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        class="input"
+                        type="checkbox"
+                        name="amenity"
+                        value="spa"
+                        checked
                     >
 
-                </div>
+                    Spa
+
+                </label>
 
 
-                <div>
+                <label>
 
-                    <label class="label">
-                        Hotel location
-                    </label>
-
-                    <select
-                        id="hotel_location"
-                        class="input"
+                    <input
+                        type="checkbox"
+                        name="amenity"
+                        value="beach"
                     >
 
-                        <option value="city_center">
-                            City center
-                        </option>
+                    Beach
 
-                        <option value="near_sea">
-                            Near sea
-                        </option>
-
-                        <option value="nature">
-                            Nature / mountain
-                        </option>
-
-                        <option value="quiet">
-                            Quiet area
-                        </option>
-
-                    </select>
-
-                </div>
+                </label>
 
 
-                <div>
+                <label>
 
-                    <label class="label">
-                        Hotel amenities
-                    </label>
+                    <input
+                        type="checkbox"
+                        name="amenity"
+                        value="aquapark"
+                    >
 
-                    <div class="grid grid-cols-2 gap-2 text-sm">
+                    Aquapark
 
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="amenity"
-                                value="pool"
-                                checked
-                            >
-                            Pool
-                        </label>
+                </label>
 
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="amenity"
-                                value="spa"
-                                checked
-                            >
-                            Spa
-                        </label>
+            </fieldset>
 
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="amenity"
-                                value="beach"
-                            >
-                            Beach
-                        </label>
 
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="amenity"
-                                value="aquapark"
-                            >
-                            Aquapark
-                        </label>
+            <label>
+
+                Meal plan
+
+                <select
+                    id="meal_board"
+                    class="input"
+                >
+
+                    <option value="breakfast_only">
+                        Breakfast only
+                    </option>
+
+                    <option value="no_meals">
+                        Room only
+                    </option>
+
+                    <option value="halfboard">
+                        Half board
+                    </option>
+
+                    <option value="fullboard">
+                        Full board
+                    </option>
+
+                    <option value="allinclusive">
+                        All inclusive
+                    </option>
+
+                </select>
+
+            </label>
+
+
+            <label>
+
+                Special notes
+
+                <textarea
+                    id="special_notes"
+                    class="input"
+                    rows="3"
+                    placeholder="Family trip, local food, etc."
+                ></textarea>
+
+            </label>
+
+
+            <button
+                id="searchBtn"
+                type="submit"
+            >
+
+                Search & Plan
+
+            </button>
+
+
+        </form>
+
+    </section>
+
+
+    <!-- RESULTS -->
+
+    <section>
+
+
+        <div
+            id="emptyState"
+            class="card center"
+        >
+
+            <h2>
+                VoyageAI
+            </h2>
+
+            <p>
+                Enter your trip requirements
+                and search.
+            </p>
+
+        </div>
+
+
+        <div
+            id="loading"
+            class="card center hidden"
+        >
+
+            <p>
+                Searching hotels, restaurants,
+                attractions, transport and routes...
+            </p>
+
+        </div>
+
+
+        <div
+            id="results"
+            class="hidden"
+        >
+
+
+            <div class="card">
+
+                <div class="row">
+
+                    <div>
+
+                        <div
+                            id="routeTitle"
+                            class="route"
+                        >
+                        </div>
+
+                        <h2>
+                            Travel Plan
+                        </h2>
+
+                        <div
+                            id="dateTitle"
+                            class="muted"
+                        >
+                        </div>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="muted">
+                            Total
+                        </div>
+
+                        <div
+                            id="costTitle"
+                            class="price total"
+                        >
+                        </div>
 
                     </div>
 
                 </div>
-
-
-                <div>
-
-                    <label class="label">
-                        Meal plan
-                    </label>
-
-                    <select
-                        id="meal_board"
-                        class="input"
-                    >
-
-                        <option value="breakfast_only">
-                            Breakfast only
-                        </option>
-
-                        <option value="no_meals">
-                            Room only
-                        </option>
-
-                        <option value="halfboard">
-                            Half board
-                        </option>
-
-                        <option value="fullboard">
-                            Full board
-                        </option>
-
-                        <option value="allinclusive">
-                            All inclusive
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div>
-
-                    <label class="label">
-                        Special notes
-                    </label>
-
-                    <textarea
-                        id="special_notes"
-                        rows="3"
-                        class="input"
-                        placeholder="Family trip, local food, etc."
-                    ></textarea>
-
-                </div>
-
-
-                <button
-                    id="searchBtn"
-                    type="submit"
-                    class="w-full bg-gradient-to-r from-red-600 to-sky-500 rounded-xl py-3 font-bold"
-                >
-
-                    <i class="fa-solid fa-magnifying-glass mr-2"></i>
-
-                    <span data-i18n="search">
-                        Search & Plan
-                    </span>
-
-                </button>
-
-
-            </form>
-
-        </section>
-
-
-        <!-- RESULTS -->
-
-        <section class="lg:col-span-8">
-
-
-            <div
-                id="emptyState"
-                class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center"
-            >
-
-                <div class="text-5xl text-sky-400 mb-4">
-                    <i class="fa-solid fa-map-location-dot"></i>
-                </div>
-
-                <h2 class="text-xl font-bold">
-                    VoyageAI
-                </h2>
-
-                <p
-                    class="text-sm text-slate-400 mt-2"
-                    data-i18n="noData"
-                >
-                    Search to see results.
-                </p>
 
             </div>
 
 
             <div
-                id="loading"
-                class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center"
-            >
-
-                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-sky-400"></i>
-
-                <p
-                    class="mt-4"
-                    data-i18n="searching"
-                >
-                    Searching...
-                </p>
-
-            </div>
+                id="warnings"
+            ></div>
 
 
             <div
-                id="results"
-                class="hidden space-y-5"
-            >
+                id="hotelArea"
+            ></div>
 
 
-                <section class="result-card">
-
-                    <div class="flex justify-between">
-
-                        <div>
-
-                            <p
-                                id="routeTitle"
-                                class="text-sky-400 text-xs font-bold"
-                            >
-                                Bursa → İstanbul
-                            </p>
-
-                            <h2 class="text-2xl font-black">
-                                Travel Plan
-                            </h2>
-
-                            <p
-                                id="dateTitle"
-                                class="text-xs text-slate-400 mt-1"
-                            >
-                                —
-                            </p>
-
-                        </div>
+            <div
+                id="transportArea"
+            ></div>
 
 
-                        <div class="text-right">
+            <div
+                id="transferArea"
+            ></div>
 
-                            <p class="text-xs text-slate-500">
-                                Total
-                            </p>
 
-                            <p
-                                id="costTitle"
-                                class="text-2xl font-bold text-emerald-400"
-                            >
-                                —
-                            </p>
+            <h2>
+                Daily Plan
+            </h2>
 
-                        </div>
 
-                    </div>
+            <div
+                id="daysArea"
+            ></div>
 
-                </section>
 
+            <div class="card">
+
+                <h3>
+                    Sources
+                </h3>
 
                 <div
-                    id="resultWarnings"
-                    class="space-y-2"
+                    id="sources"
+                    class="links"
                 ></div>
-
-
-                <div id="hotelArea"></div>
-
-
-                <div id="transportArea"></div>
-
-
-                <section>
-
-                    <h2
-                        class="text-lg font-bold mb-3"
-                        data-i18n="daily"
-                    >
-                        Daily plan
-                    </h2>
-
-                    <div
-                        id="daysArea"
-                        class="space-y-4"
-                    ></div>
-
-                </section>
-
-
-                <section
-                    id="departureArea"
-                ></section>
-
-
-                <section class="result-card">
-
-                    <h2 class="font-bold mb-3">
-                        <span data-i18n="sources">
-                            Sources
-                        </span>
-                    </h2>
-
-                    <div
-                        id="sourcesArea"
-                        class="flex flex-wrap gap-2"
-                    ></div>
-
-                </section>
 
             </div>
 
-        </section>
 
-    </div>
+        </div>
+
+
+    </section>
+
 
 </main>
 
 
 <script
-    src="/static/js/app.js?v=6.0.0"
+    src="/static/js/app.js?v=7.0.0"
 ></script>
 
+
 </body>
+
 </html>
