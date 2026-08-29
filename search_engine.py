@@ -331,13 +331,14 @@ class SerpApi:
         }
 
 
-        if child_ages:
-
-            common[
-                "children_ages"
-            ] = ",".join(
-                str(x)
-                for x in child_ages
+        if children > 0:
+            if not child_ages or len(child_ages) != children:
+                raise SearchError(
+                    f"Child ages are required for {children} child(ren). "
+                    f"Received {len(child_ages or [])} age(s)."
+                )
+            common["children_ages"] = ",".join(
+                str(age) for age in child_ages
             )
 
 
@@ -365,29 +366,9 @@ class SerpApi:
             },
 
             {
-                "engine":
-                    "google_hotels",
-
+                **common,
                 "q":
-                    destination,
-
-                "check_in_date":
-                    check_in,
-
-                "check_out_date":
-                    check_out,
-
-                "adults":
-                    adults,
-
-                "children":
-                    children,
-
-                "rooms":
-                    rooms,
-
-                "currency":
-                    SERPAPI_CURRENCY
+                    destination
             }
         ]
 
