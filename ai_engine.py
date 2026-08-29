@@ -730,38 +730,30 @@ class HybridEngine:
 
                 transport_feasible = False
 
-                transport_warning = tr(
-                    language,
-                    "no_route",
-                    mode=transport_mode,
-                    origin=data["origin"],
-                    destination=data["destination"]
-                )
+                transport_warning = ""
 
-            if transport_feasible:
 
-                transport_candidates = (
+            transport_candidates = (
 
-                    self.search.google_search(
+                self.search.google_search(
 
-                        (
-                            f"{data['origin']} to "
-                            f"{data['destination']} "
-                            f"{transport_mode} "
-                            f"{start.isoformat()} "
-                            "companies tickets"
-                        ),
+                    (
+                        f"{data['origin']} to "
+                        f"{data['destination']} "
+                        f"{transport_mode} "
+                        f"{start.isoformat()} "
+                        "companies tickets"
+                    ),
 
-                        (
-                            "transport_"
-                            + transport_mode
-                        ),
+                    (
+                    "transport_"
+                    + transport_mode
+                    ),
 
-                        10
-
-                    )
+                    10
 
                 )
+            )
 
 
         elif transport_mode == "Plane":
@@ -1228,6 +1220,11 @@ IMPORTANT RULES:
 7. Use only the information supplied below.
 8. If information is unavailable, say so in {language_name}.
 9. Return valid JSON only.
+10. Never mention internal system terms such as:
+    no_route, transport_feasible, transport_warning,
+    verified_route, ranking_score, or internal error names.
+    These are implementation details and must never appear
+    in the user-facing explanation.
 
 Your task is to:
 
@@ -1307,7 +1304,7 @@ Return exactly this JSON structure:
             )
 
 
-        if not transport_feasible:
+        if not transport_feasible and transport_warning:
 
             warnings.append(
                 transport_warning
@@ -1697,7 +1694,7 @@ Return exactly this JSON structure:
                     transport_mode,
 
                 "verified_route":
-                    transport_feasible,
+                    bool(directions_summary),
 
                 "company":
                     (
