@@ -4,6 +4,103 @@ const state = {
 };
 
 
+const THEMES = [
+    "midnight",
+    "ocean",
+    "lavender",
+    "sunset"
+];
+
+
+function applyTheme(theme) {
+
+    if (!THEMES.includes(theme)) {
+        theme = "midnight";
+    }
+
+    document.body.dataset.theme =
+        theme;
+
+    localStorage.setItem(
+        "voyageai-theme",
+        theme
+    );
+}
+
+
+function applyMode(mode) {
+
+    if (
+        mode !== "light"
+        &&
+        mode !== "dark"
+    ) {
+        mode = "dark";
+    }
+
+    document.body.dataset.mode =
+        mode;
+
+    localStorage.setItem(
+        "voyageai-mode",
+        mode
+    );
+
+
+    const toggle =
+        $("modeToggle");
+
+    const icon =
+        $("modeToggleIcon");
+
+    const text =
+        $("modeToggleText");
+
+
+    if (
+        !toggle
+        ||
+        !icon
+        ||
+        !text
+    ) {
+        return;
+    }
+
+
+    const isLight =
+        mode === "light";
+
+
+    toggle.classList.toggle(
+        "is-light",
+        isLight
+    );
+
+
+    toggle.setAttribute(
+        "aria-pressed",
+        String(isLight)
+    );
+
+
+    icon.textContent =
+        isLight
+        ?
+            "☀"
+        :
+            "☾";
+
+
+    text.textContent =
+        isLight
+        ?
+            "Bright"
+        :
+            "Dark";
+}
+
+
 const I18N = {
 
     tr: {
@@ -132,7 +229,9 @@ const cities = [
 const $ = (
     id
 ) =>
-    document.getElementById(id);
+    document.getElementById(
+        id
+    );
 
 
 const t = () =>
@@ -341,11 +440,13 @@ function collectPayload() {
 
         child_age:
             childrenCount
-            ? Number(
-                $("child_age").value
-                || 1
-            )
-            : null,
+            ?
+                Number(
+                    $("child_age").value
+                    || 1
+                )
+            :
+                null,
 
         rooms_count:
             Number(
@@ -445,7 +546,7 @@ function renderHotel(
                     <p class="muted">
 
                         Rating:
-                        ${hotel.rating ?? "—"}/10
+                        ${hotel.rating ?? "—"}
 
                         ·
 
@@ -1219,7 +1320,6 @@ document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-
         cities.forEach(
             city => {
 
@@ -1292,7 +1392,8 @@ document.addEventListener(
                             Number(
                                 $("children_count")
                                     .value
-                                    || 0
+                                ||
+                                0
                             ) === 0
 
                         );
@@ -1313,6 +1414,73 @@ document.addEventListener(
 
                 }
             );
+
+
+        $("themeSelector")
+            .addEventListener(
+                "change",
+                event => {
+
+                    applyTheme(
+                        event.target.value
+                    );
+
+                }
+            );
+
+
+        const savedTheme =
+            localStorage.getItem(
+                "voyageai-theme"
+            )
+            || "midnight";
+
+
+        $("themeSelector").value =
+            savedTheme;
+
+
+        applyTheme(
+            savedTheme
+        );
+
+
+        /* ====================================================
+           DARK / BRIGHT TOGGLE
+           ==================================================== */
+
+        $("modeToggle")
+            .addEventListener(
+                "click",
+                () => {
+
+                    const currentMode =
+                        document.body.dataset.mode
+                        || "dark";
+
+
+                    applyMode(
+                        currentMode === "dark"
+                        ?
+                            "light"
+                        :
+                            "dark"
+                    );
+
+                }
+            );
+
+
+        const savedMode =
+            localStorage.getItem(
+                "voyageai-mode"
+            )
+            || "dark";
+
+
+        applyMode(
+            savedMode
+        );
 
 
         $("hotel_min_rating")

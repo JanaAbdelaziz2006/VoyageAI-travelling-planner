@@ -16,7 +16,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=7.0.0"
+        href="/static/css/style.css?v=7.2.0"
     >
 
 </head>
@@ -29,36 +29,93 @@
 
     <div class="container header">
 
-        <div>
+        <div class="brand">
 
             <h1>
                 VoyageAI
             </h1>
 
             <p>
-                Real travel search + ranking + planning
+                Real travel search, ranking & planning
             </p>
 
         </div>
 
 
-        <select
-            id="langSelector"
-        >
+        <div class="header-controls">
 
-            <option value="tr">
-                Türkçe
-            </option>
+            <select
+                id="langSelector"
+                aria-label="Language"
+            >
 
-            <option value="en">
-                English
-            </option>
+                <option value="tr">
+                    Türkçe
+                </option>
 
-            <option value="ar">
-                العربية
-            </option>
+                <option value="en">
+                    English
+                </option>
 
-        </select>
+                <option value="ar">
+                    العربية
+                </option>
+
+            </select>
+
+
+            <select
+                id="themeSelector"
+                aria-label="Color theme"
+            >
+
+                <option value="midnight">
+                    Midnight
+                </option>
+
+                <option value="ocean">
+                    Ocean
+                </option>
+
+                <option value="lavender">
+                    Lavender
+                </option>
+
+                <option value="sunset">
+                    Sunset
+                </option>
+
+            </select>
+
+
+            <button
+                id="modeToggle"
+                class="theme-toggle"
+                type="button"
+                aria-label="Switch between dark and bright mode"
+                aria-pressed="false"
+            >
+
+                <span
+                    class="theme-toggle-track"
+                    aria-hidden="true"
+                ></span>
+
+                <span
+                    id="modeToggleIcon"
+                    class="theme-toggle-icon"
+                    aria-hidden="true"
+                >
+                    ☾
+                </span>
+
+                <span id="modeToggleText">
+                    Dark
+                </span>
+
+            </button>
+
+        </div>
 
     </div>
 
@@ -626,7 +683,7 @@
 
 
 <script
-    src="/static/js/app.js?v=7.0.0"
+    src="/static/js/app.js?v=7.2.0"
 ></script>
 
 
