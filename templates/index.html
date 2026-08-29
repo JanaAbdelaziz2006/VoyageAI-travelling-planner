@@ -16,7 +16,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=7.2.0"
+        href="/static/css/style.css?v=7.3.0"
     >
 
 </head>
@@ -35,7 +35,9 @@
                 VoyageAI
             </h1>
 
-            <p>
+            <p
+                data-i18n="headerSubtitle"
+            >
                 Real travel search, ranking & planning
             </p>
 
@@ -49,15 +51,24 @@
                 aria-label="Language"
             >
 
-                <option value="tr">
+                <option
+                    value="tr"
+                    data-i18n="languageTurkish"
+                >
                     Türkçe
                 </option>
 
-                <option value="en">
+                <option
+                    value="en"
+                    data-i18n="languageEnglish"
+                >
                     English
                 </option>
 
-                <option value="ar">
+                <option
+                    value="ar"
+                    data-i18n="languageArabic"
+                >
                     العربية
                 </option>
 
@@ -69,19 +80,31 @@
                 aria-label="Color theme"
             >
 
-                <option value="midnight">
+                <option
+                    value="midnight"
+                    data-i18n="themeMidnight"
+                >
                     Midnight
                 </option>
 
-                <option value="ocean">
+                <option
+                    value="ocean"
+                    data-i18n="themeOcean"
+                >
                     Ocean
                 </option>
 
-                <option value="lavender">
+                <option
+                    value="lavender"
+                    data-i18n="themeLavender"
+                >
                     Lavender
                 </option>
 
-                <option value="sunset">
+                <option
+                    value="sunset"
+                    data-i18n="themeSunset"
+                >
                     Sunset
                 </option>
 
@@ -131,7 +154,9 @@
 
         <form id="tripForm">
 
-            <h2>
+            <h2
+                data-i18n="tripSearch"
+            >
                 Trip Search
             </h2>
 
@@ -141,7 +166,11 @@
 
                 <label>
 
-                    Departure
+                    <span
+                        data-i18n="departure"
+                    >
+                        Departure
+                    </span>
 
                     <select
                         id="origin"
@@ -154,7 +183,11 @@
 
                 <label>
 
-                    Destination
+                    <span
+                        data-i18n="destination"
+                    >
+                        Destination
+                    </span>
 
                     <select
                         id="destination"
@@ -169,7 +202,11 @@
 
             <label>
 
-                Start date
+                <span
+                    data-i18n="startDate"
+                >
+                    Start date
+                </span>
 
                 <input
                     id="start_date"
@@ -186,7 +223,11 @@
 
                 <label>
 
-                    Adults
+                    <span
+                        data-i18n="adults"
+                    >
+                        Adults
+                    </span>
 
                     <input
                         id="adults_count"
@@ -202,7 +243,11 @@
 
                 <label>
 
-                    Children
+                    <span
+                        data-i18n="children"
+                    >
+                        Children
+                    </span>
 
                     <input
                         id="children_count"
@@ -218,7 +263,11 @@
 
                 <label>
 
-                    Rooms
+                    <span
+                        data-i18n="rooms"
+                    >
+                        Rooms
+                    </span>
 
                     <select
                         id="rooms_count"
@@ -248,7 +297,11 @@
 
                 <label>
 
-                    Nights
+                    <span
+                        data-i18n="nights"
+                    >
+                        Nights
+                    </span>
 
                     <input
                         id="nights"
@@ -272,7 +325,11 @@
 
                 <label>
 
-                    Child age
+                    <span
+                        data-i18n="childAge"
+                    >
+                        Child age
+                    </span>
 
                     <input
                         id="child_age"
@@ -290,38 +347,63 @@
 
             <label>
 
-                Transport
+                <span
+                    data-i18n="transport"
+                >
+                    Transport
+                </span>
 
                 <select
                     id="transport_mode"
                     class="input"
                 >
 
-                    <option value="Bus">
+                    <option
+                        value="Bus"
+                        data-i18n="bus"
+                    >
                         Bus
                     </option>
 
-                    <option value="Plane">
+                    <option
+                        value="Plane"
+                        data-i18n="plane"
+                    >
                         Plane
                     </option>
 
-                    <option value="Train">
+                    <option
+                        value="Train"
+                        data-i18n="train"
+                    >
                         Train
                     </option>
 
-                    <option value="Passenger Ferry">
+                    <option
+                        value="Passenger Ferry"
+                        data-i18n="passengerFerry"
+                    >
                         Passenger Ferry
                     </option>
 
-                    <option value="Car Ferry">
+                    <option
+                        value="Car Ferry"
+                        data-i18n="carFerry"
+                    >
                         Car Ferry
                     </option>
 
-                    <option value="Own Car">
+                    <option
+                        value="Own Car"
+                        data-i18n="ownCar"
+                    >
                         Own Car
                     </option>
 
-                    <option value="Own EV">
+                    <option
+                        value="Own EV"
+                        data-i18n="ownEV"
+                    >
                         Own EV
                     </option>
 
@@ -332,18 +414,28 @@
 
             <label>
 
-                Budget strategy
+                <span
+                    data-i18n="budgetStrategy"
+                >
+                    Budget strategy
+                </span>
 
                 <select
                     id="budget_mode"
                     class="input"
                 >
 
-                    <option value="cheapest_best">
+                    <option
+                        value="cheapest_best"
+                        data-i18n="bestCheapest"
+                    >
                         Best + Cheapest
                     </option>
 
-                    <option value="custom">
+                    <option
+                        value="custom"
+                        data-i18n="customBudget"
+                    >
                         Custom budget
                     </option>
 
@@ -354,13 +446,18 @@
 
             <label>
 
-                Budget TRY
+                <span
+                    data-i18n="budgetTRY"
+                >
+                    Budget TRY
+                </span>
 
                 <input
                     id="budget_amount_try"
                     type="number"
                     min="0"
                     class="input"
+                    data-i18n-placeholder="optional"
                     placeholder="Optional"
                 >
 
@@ -369,7 +466,11 @@
 
             <label>
 
-                Minimum hotel rating
+                <span
+                    data-i18n="minimumHotelRating"
+                >
+                    Minimum hotel rating
+                </span>
 
                 <input
                     id="hotel_min_rating"
@@ -390,26 +491,42 @@
 
             <label>
 
-                Hotel location
+                <span
+                    data-i18n="hotelLocation"
+                >
+                    Hotel location
+                </span>
 
                 <select
                     id="hotel_location"
                     class="input"
                 >
 
-                    <option value="city_center">
+                    <option
+                        value="city_center"
+                        data-i18n="cityCenter"
+                    >
                         City center
                     </option>
 
-                    <option value="near_sea">
+                    <option
+                        value="near_sea"
+                        data-i18n="nearSea"
+                    >
                         Near sea
                     </option>
 
-                    <option value="nature">
+                    <option
+                        value="nature"
+                        data-i18n="natureMountain"
+                    >
                         Nature / mountain
                     </option>
 
-                    <option value="quiet">
+                    <option
+                        value="quiet"
+                        data-i18n="quietArea"
+                    >
                         Quiet area
                     </option>
 
@@ -420,7 +537,9 @@
 
             <fieldset>
 
-                <legend>
+                <legend
+                    data-i18n="hotelAmenities"
+                >
                     Hotel amenities
                 </legend>
 
@@ -434,7 +553,11 @@
                         checked
                     >
 
-                    Pool
+                    <span
+                        data-i18n="pool"
+                    >
+                        Pool
+                    </span>
 
                 </label>
 
@@ -448,7 +571,11 @@
                         checked
                     >
 
-                    Spa
+                    <span
+                        data-i18n="spa"
+                    >
+                        Spa
+                    </span>
 
                 </label>
 
@@ -461,7 +588,11 @@
                         value="beach"
                     >
 
-                    Beach
+                    <span
+                        data-i18n="beach"
+                    >
+                        Beach
+                    </span>
 
                 </label>
 
@@ -474,7 +605,11 @@
                         value="aquapark"
                     >
 
-                    Aquapark
+                    <span
+                        data-i18n="aquapark"
+                    >
+                        Aquapark
+                    </span>
 
                 </label>
 
@@ -483,30 +618,49 @@
 
             <label>
 
-                Meal plan
+                <span
+                    data-i18n="mealPlan"
+                >
+                    Meal plan
+                </span>
 
                 <select
                     id="meal_board"
                     class="input"
                 >
 
-                    <option value="breakfast_only">
+                    <option
+                        value="breakfast_only"
+                        data-i18n="breakfastOnly"
+                    >
                         Breakfast only
                     </option>
 
-                    <option value="no_meals">
+                    <option
+                        value="no_meals"
+                        data-i18n="roomOnly"
+                    >
                         Room only
                     </option>
 
-                    <option value="halfboard">
+                    <option
+                        value="halfboard"
+                        data-i18n="halfBoard"
+                    >
                         Half board
                     </option>
 
-                    <option value="fullboard">
+                    <option
+                        value="fullboard"
+                        data-i18n="fullBoard"
+                    >
                         Full board
                     </option>
 
-                    <option value="allinclusive">
+                    <option
+                        value="allinclusive"
+                        data-i18n="allInclusive"
+                    >
                         All inclusive
                     </option>
 
@@ -517,12 +671,17 @@
 
             <label>
 
-                Special notes
+                <span
+                    data-i18n="specialNotes"
+                >
+                    Special notes
+                </span>
 
                 <textarea
                     id="special_notes"
                     class="input"
                     rows="3"
+                    data-i18n-placeholder="specialNotesPlaceholder"
                     placeholder="Family trip, local food, etc."
                 ></textarea>
 
@@ -532,10 +691,9 @@
             <button
                 id="searchBtn"
                 type="submit"
+                data-i18n="search"
             >
-
                 Search & Plan
-
             </button>
 
 
@@ -558,9 +716,10 @@
                 VoyageAI
             </h2>
 
-            <p>
-                Enter your trip requirements
-                and search.
+            <p
+                data-i18n="emptyState"
+            >
+                Enter your trip requirements and search.
             </p>
 
         </div>
@@ -571,7 +730,9 @@
             class="card center hidden"
         >
 
-            <p>
+            <p
+                data-i18n="loading"
+            >
                 Searching hotels, restaurants,
                 attractions, transport and routes...
             </p>
@@ -597,7 +758,9 @@
                         >
                         </div>
 
-                        <h2>
+                        <h2
+                            data-i18n="travelPlan"
+                        >
                             Travel Plan
                         </h2>
 
@@ -612,7 +775,10 @@
 
                     <div>
 
-                        <div class="muted">
+                        <div
+                            class="muted"
+                            data-i18n="total"
+                        >
                             Total
                         </div>
 
@@ -649,7 +815,9 @@
             ></div>
 
 
-            <h2>
+            <h2
+                data-i18n="dailyPlan"
+            >
                 Daily Plan
             </h2>
 
@@ -661,7 +829,9 @@
 
             <div class="card">
 
-                <h3>
+                <h3
+                    data-i18n="sources"
+                >
                     Sources
                 </h3>
 
@@ -683,7 +853,7 @@
 
 
 <script
-    src="/static/js/app.js?v=7.2.0"
+    src="/static/js/app.js?v=7.3.0"
 ></script>
 
 

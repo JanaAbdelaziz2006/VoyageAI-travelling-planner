@@ -17,22 +17,35 @@ from search_engine import SearchError
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
+
 app = FastAPI(
     title="VoyageAI Hybrid Travel Planner",
     version="7.0.0"
 )
 
+
 app.mount(
     "/static",
-    StaticFiles(directory=str(BASE_DIR / "static")),
+    StaticFiles(
+        directory=str(BASE_DIR / "static")
+    ),
     name="static",
 )
 
 
 class TripRequest(BaseModel):
-    origin: str = Field(min_length=2)
-    destination: str = Field(min_length=2)
-    start_date: str = Field(min_length=10)
+
+    origin: str = Field(
+        min_length=2
+    )
+
+    destination: str = Field(
+        min_length=2
+    )
+
+    start_date: str = Field(
+        min_length=10
+    )
 
     nights: int = Field(
         default=3,
@@ -89,11 +102,14 @@ class TripRequest(BaseModel):
     language: str = "tr"
 
 
-@app.exception_handler(RequestValidationError)
+@app.exception_handler(
+    RequestValidationError
+)
 async def validation_handler(
     request: Request,
     exc: RequestValidationError
 ):
+
     error = exc.errors()[0]
 
     return JSONResponse(
@@ -110,8 +126,11 @@ async def validation_handler(
 
 @app.get("/")
 async def home():
+
     return FileResponse(
-        BASE_DIR / "templates" / "index.html"
+        BASE_DIR
+        / "templates"
+        / "index.html"
     )
 
 
@@ -130,20 +149,27 @@ async def health():
 
     return {
         "success": True,
+
         "serpapi_configured": bool(
             serp_key
             and serp_key != "serpapi"
         ),
+
         "gemini_configured": bool(
             gemini_key
             and gemini_key != "gemini"
         ),
+
         "gemini_model": os.getenv(
             "GEMINI_MODEL",
             "gemini-3.6-flash"
         ),
-        "mode": "hybrid-free-no-grounding",
-        "gemini_grounding": False,
+
+        "mode":
+            "hybrid-free-no-grounding",
+
+        "gemini_grounding":
+            False,
     }
 
 
@@ -157,13 +183,16 @@ async def plan_trip(
         ==
         payload.destination.strip().casefold()
     ):
+
         return JSONResponse(
             status_code=400,
             content={
                 "success": False,
                 "error":
-                    "Departure and destination "
-                    "must be different."
+                    (
+                        "Departure and destination "
+                        "must be different."
+                    ),
             },
         )
 
@@ -175,7 +204,7 @@ async def plan_trip(
 
         return {
             "success": True,
-            "data": result
+            "data": result,
         }
 
     except (
@@ -187,7 +216,7 @@ async def plan_trip(
             status_code=502,
             content={
                 "success": False,
-                "error": str(exc)
+                "error": str(exc),
             },
         )
 
@@ -199,7 +228,7 @@ async def plan_trip(
             status_code=500,
             content={
                 "success": False,
-                "error": str(exc)
+                "error": str(exc),
             },
         )
 

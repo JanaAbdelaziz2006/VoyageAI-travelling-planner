@@ -11,7 +11,6 @@ const THEMES = [
     "sunset"
 ];
 
-
 function applyTheme(theme) {
 
     if (!THEMES.includes(theme)) {
@@ -28,27 +27,1138 @@ function applyTheme(theme) {
 }
 
 
-function applyMode(mode) {
+const I18N = {
 
-    if (
-        mode !== "light"
-        &&
-        mode !== "dark"
-    ) {
-        mode = "dark";
+    en: {
+
+        headerSubtitle:
+            "Real travel search, ranking & planning",
+
+        languageTurkish:
+            "Turkish",
+
+        languageEnglish:
+            "English",
+
+        languageArabic:
+            "Arabic",
+
+        themeMidnight:
+            "Midnight",
+
+        themeOcean:
+            "Ocean",
+
+        themeLavender:
+            "Lavender",
+
+        themeSunset:
+            "Sunset",
+
+        dark:
+            "Dark",
+
+        bright:
+            "Bright",
+
+        tripSearch:
+            "Trip Search",
+
+        departure:
+            "Departure",
+
+        destination:
+            "Destination",
+
+        startDate:
+            "Start date",
+
+        adults:
+            "Adults",
+
+        children:
+            "Children",
+
+        rooms:
+            "Rooms",
+
+        nights:
+            "Nights",
+
+        childAge:
+            "Child age",
+
+        transport:
+            "Transport",
+
+        bus:
+            "Bus",
+
+        plane:
+            "Plane",
+
+        train:
+            "Train",
+
+        passengerFerry:
+            "Passenger Ferry",
+
+        carFerry:
+            "Car Ferry",
+
+        ownCar:
+            "Own Car",
+
+        ownEV:
+            "Own EV",
+
+        budgetStrategy:
+            "Budget strategy",
+
+        bestCheapest:
+            "Best + Cheapest",
+
+        customBudget:
+            "Custom budget",
+
+        budgetTRY:
+            "Budget TRY",
+
+        optional:
+            "Optional",
+
+        minimumHotelRating:
+            "Minimum hotel rating",
+
+        hotelLocation:
+            "Hotel location",
+
+        cityCenter:
+            "City center",
+
+        nearSea:
+            "Near sea",
+
+        natureMountain:
+            "Nature / mountain",
+
+        quietArea:
+            "Quiet area",
+
+        hotelAmenities:
+            "Hotel amenities",
+
+        pool:
+            "Pool",
+
+        spa:
+            "Spa",
+
+        beach:
+            "Beach",
+
+        aquapark:
+            "Aquapark",
+
+        mealPlan:
+            "Meal plan",
+
+        breakfastOnly:
+            "Breakfast only",
+
+        roomOnly:
+            "Room only",
+
+        halfBoard:
+            "Half board",
+
+        fullBoard:
+            "Full board",
+
+        allInclusive:
+            "All inclusive",
+
+        specialNotes:
+            "Special notes",
+
+        specialNotesPlaceholder:
+            "Family trip, local food, etc.",
+
+        search:
+            "Search & Plan",
+
+        searching:
+            "Searching live data...",
+
+        emptyState:
+            "Enter your trip requirements and search.",
+
+        loading:
+            "Searching hotels, restaurants, attractions, transport and routes...",
+
+        travelPlan:
+            "Travel Plan",
+
+        total:
+            "Total",
+
+        dailyPlan:
+            "Daily Plan",
+
+        sources:
+            "Sources",
+
+        recommendedHotel:
+            "Recommended Hotel",
+
+        noVerifiedHotel:
+            "No verified hotel result was returned.",
+
+        rating:
+            "Rating",
+
+        reviews:
+            "Reviews",
+
+        googleHotels:
+            "Google Hotels",
+
+        perRoomNight:
+            "Per room/night",
+
+        openHotelSource:
+            "Open hotel source",
+
+        transportTitle:
+            "Transport",
+
+        routeChecked:
+            "Route checked",
+
+        noVerifiedOperator:
+            "No verified operator",
+
+        openTransportSource:
+            "Open transport source",
+
+        hotelTransport:
+            "Hotel ↔ Transport",
+
+        stationToHotel:
+            "Station / terminal → hotel",
+
+        hotelToStation:
+            "Hotel → station / terminal",
+
+        duration:
+            "Duration",
+
+        distance:
+            "Distance",
+
+        openGoogleMaps:
+            "Open in Google Maps",
+
+        day:
+            "Day",
+
+        lunch:
+            "Lunch",
+
+        dinner:
+            "Dinner",
+
+        breakfast:
+            "Breakfast",
+
+        ratingShort:
+            "Rating",
+
+        source:
+            "Source",
+
+        place:
+            "Place",
+
+        restaurant:
+            "Restaurant",
+
+        transport:
+            "Transport",
+
+        noHotelCandidate:
+            "No hotel candidate was returned from Google Hotels.",
+
+        noSpecificTransport:
+            "No specific transport company could be verified.",
+
+        priceUnavailable:
+            "The selected hotel's current total price was not returned by the provider. No price was invented.",
+
+        transportPriceUnavailable:
+            "The selected transport company was found, but a current ticket price was not returned by the provider.",
+
+        noTicketPrice:
+            "The operator was found, but no current ticket price was returned by the search.",
+
+        differentPlaces:
+            "Departure and destination must be different.",
+
+        chooseStartDate:
+            "Please choose a start date.",
+
+        map:
+            "Open in Google Maps",
+
+        routeFeasible:
+            "The route appears feasible, but a specific operator could not be verified from the current search results.",
+
+        noRoute:
+            "No verified {mode} route was returned for {origin} → {destination}.",
+
+        missingHotelFeatures:
+            "Not all requested hotel features were available together in the verified search results. The system selected the highest-ranked practical match instead of inventing a hotel.",
+
+        breakfastAccordingToMealPlan:
+            "Breakfast according to the selected meal plan.",
+
+        lunchRecommended:
+            "Lunch at the recommended ranked restaurant.",
+
+        dinnerAccordingToMealPlan:
+            "Dinner according to the selected meal plan.",
+
+        exactReturnTiming:
+            "Exact return timing is shown only when a verified departure time is available.",
+
+        hotelExplanation:
+            "Explain why this hotel was selected based only on the supplied facts.",
+
+        transportExplanation:
+            "Explain why this transport option was selected based only on the supplied facts.",
+
+        arrivalExplanation:
+            "Explain the arrival transfer using only the supplied verified route facts.",
+
+        departureExplanation:
+            "Explain the departure transfer using only the supplied verified route facts."
+    },
+
+
+    tr: {
+
+        headerSubtitle:
+            "Gerçek seyahat araması, sıralama ve planlama",
+
+        languageTurkish:
+            "Türkçe",
+
+        languageEnglish:
+            "İngilizce",
+
+        languageArabic:
+            "Arapça",
+
+        themeMidnight:
+            "Gece",
+
+        themeOcean:
+            "Okyanus",
+
+        themeLavender:
+            "Lavanta",
+
+        themeSunset:
+            "Gün Batımı",
+
+        dark:
+            "Koyu",
+
+        bright:
+            "Açık",
+
+        tripSearch:
+            "Seyahat Arama",
+
+        departure:
+            "Kalkış",
+
+        destination:
+            "Varış",
+
+        startDate:
+            "Başlangıç tarihi",
+
+        adults:
+            "Yetişkin",
+
+        children:
+            "Çocuk",
+
+        rooms:
+            "Odalar",
+
+        nights:
+            "Gece",
+
+        childAge:
+            "Çocuk yaşı",
+
+        transport:
+            "Ulaşım",
+
+        bus:
+            "Otobüs",
+
+        plane:
+            "Uçak",
+
+        train:
+            "Tren",
+
+        passengerFerry:
+            "Yolcu Feribotu",
+
+        carFerry:
+            "Arabalı Feribot",
+
+        ownCar:
+            "Kendi Arabam",
+
+        ownEV:
+            "Kendi Elektrikli Arabam",
+
+        budgetStrategy:
+            "Bütçe stratejisi",
+
+        bestCheapest:
+            "En İyi + En Ucuz",
+
+        customBudget:
+            "Özel bütçe",
+
+        budgetTRY:
+            "Bütçe TRY",
+
+        optional:
+            "İsteğe bağlı",
+
+        minimumHotelRating:
+            "Minimum otel puanı",
+
+        hotelLocation:
+            "Otel konumu",
+
+        cityCenter:
+            "Şehir merkezi",
+
+        nearSea:
+            "Denize yakın",
+
+        natureMountain:
+            "Doğa / dağ",
+
+        quietArea:
+            "Sessiz bölge",
+
+        hotelAmenities:
+            "Otel olanakları",
+
+        pool:
+            "Havuz",
+
+        spa:
+            "Spa",
+
+        beach:
+            "Plaj",
+
+        aquapark:
+            "Aquapark",
+
+        mealPlan:
+            "Yemek planı",
+
+        breakfastOnly:
+            "Sadece kahvaltı",
+
+        roomOnly:
+            "Sadece oda",
+
+        halfBoard:
+            "Yarım pansiyon",
+
+        fullBoard:
+            "Tam pansiyon",
+
+        allInclusive:
+            "Her şey dahil",
+
+        specialNotes:
+            "Özel notlar",
+
+        specialNotesPlaceholder:
+            "Aile gezisi, yerel yemekler vb.",
+
+        search:
+            "Ara & Planla",
+
+        searching:
+            "Canlı veriler aranıyor...",
+
+        emptyState:
+            "Seyahat gereksinimlerinizi girin ve arayın.",
+
+        loading:
+            "Oteller, restoranlar, turistik yerler, ulaşım ve rotalar aranıyor...",
+
+        travelPlan:
+            "Seyahat Planı",
+
+        total:
+            "Toplam",
+
+        dailyPlan:
+            "Günlük Plan",
+
+        sources:
+            "Kaynaklar",
+
+        recommendedHotel:
+            "Önerilen Otel",
+
+        noVerifiedHotel:
+            "Doğrulanmış bir otel sonucu döndürülmedi.",
+
+        rating:
+            "Puan",
+
+        reviews:
+            "Yorum",
+
+        googleHotels:
+            "Google Hotels",
+
+        perRoomNight:
+            "Oda/gece",
+
+        openHotelSource:
+            "Otel kaynağını aç",
+
+        transportTitle:
+            "Ulaşım",
+
+        routeChecked:
+            "Rota kontrol edildi",
+
+        noVerifiedOperator:
+            "Doğrulanmış operatör yok",
+
+        openTransportSource:
+            "Ulaşım kaynağını aç",
+
+        hotelTransport:
+            "Otel ↔ Ulaşım",
+
+        stationToHotel:
+            "İstasyon / terminal → otel",
+
+        hotelToStation:
+            "Otel → istasyon / terminal",
+
+        duration:
+            "Süre",
+
+        distance:
+            "Mesafe",
+
+        openGoogleMaps:
+            "Google Maps'te aç",
+
+        day:
+            "Gün",
+
+        lunch:
+            "Öğle yemeği",
+
+        dinner:
+            "Akşam yemeği",
+
+        breakfast:
+            "Kahvaltı",
+
+        ratingShort:
+            "Puan",
+
+        source:
+            "Kaynak",
+
+        place:
+            "Yer",
+
+        restaurant:
+            "Restoran",
+
+        noHotelCandidate:
+            "Google Hotels'tan otel adayı döndürülmedi.",
+
+        noSpecificTransport:
+            "Belirli bir ulaşım şirketi doğrulanamadı.",
+
+        priceUnavailable:
+            "Seçilen otelin güncel toplam fiyatı sağlayıcı tarafından döndürülmedi. Fiyat uydurulmadı.",
+
+        transportPriceUnavailable:
+            "Seçilen ulaşım şirketi bulundu ancak güncel bilet fiyatı sağlayıcı tarafından döndürülmedi.",
+
+        noTicketPrice:
+            "Operatör bulundu ancak aramada güncel bilet fiyatı döndürülmedi.",
+
+        differentPlaces:
+            "Kalkış ve varış noktaları farklı olmalıdır.",
+
+        chooseStartDate:
+            "Lütfen bir başlangıç tarihi seçin.",
+
+        map:
+            "Google Maps'te aç",
+
+        routeFeasible:
+            "Rota uygun görünüyor ancak mevcut arama sonuçlarından belirli bir operatör doğrulanamadı.",
+
+        noRoute:
+            "{origin} → {destination} için doğrulanmış {mode} rotası döndürülmedi.",
+
+        missingHotelFeatures:
+            "İstenen tüm otel özellikleri doğrulanmış arama sonuçlarında aynı anda bulunamadı. Sistem bir otel uydurmak yerine en yüksek sıralı pratik eşleşmeyi seçti.",
+
+        breakfastAccordingToMealPlan:
+            "Seçilen yemek planına göre kahvaltı.",
+
+        lunchRecommended:
+            "Önerilen sıralanmış restoranda öğle yemeği.",
+
+        dinnerAccordingToMealPlan:
+            "Seçilen yemek planına göre akşam yemeği.",
+
+        exactReturnTiming:
+            "Kesin dönüş zamanı yalnızca doğrulanmış bir kalkış saati mevcut olduğunda gösterilir.",
+
+        hotelExplanation:
+            "Yalnızca sağlanan gerçek bilgilere dayanarak bu otelin neden seçildiğini açıkla.",
+
+        transportExplanation:
+            "Yalnızca sağlanan gerçek bilgilere dayanarak bu ulaşım seçeneğinin neden seçildiğini açıkla.",
+
+        arrivalExplanation:
+            "Yalnızca sağlanan doğrulanmış rota bilgilerini kullanarak varış transferini açıkla.",
+
+        departureExplanation:
+            "Yalnızca sağlanan doğrulanmış rota bilgilerini kullanarak dönüş transferini açıkla."
+    },
+
+
+    ar: {
+
+        headerSubtitle:
+            "بحث حقيقي عن السفر وترتيبه وتخطيطه",
+
+        languageTurkish:
+            "التركية",
+
+        languageEnglish:
+            "الإنجليزية",
+
+        languageArabic:
+            "العربية",
+
+        themeMidnight:
+            "ليلي",
+
+        themeOcean:
+            "محيطي",
+
+        themeLavender:
+            "لافندر",
+
+        themeSunset:
+            "غروب",
+
+        dark:
+            "داكن",
+
+        bright:
+            "فاتح",
+
+        tripSearch:
+            "البحث عن رحلة",
+
+        departure:
+            "المغادرة",
+
+        destination:
+            "الوجهة",
+
+        startDate:
+            "تاريخ البدء",
+
+        adults:
+            "البالغون",
+
+        children:
+            "الأطفال",
+
+        rooms:
+            "الغرف",
+
+        nights:
+            "الليالي",
+
+        childAge:
+            "عمر الطفل",
+
+        transport:
+            "وسيلة النقل",
+
+        bus:
+            "حافلة",
+
+        plane:
+            "طائرة",
+
+        train:
+            "قطار",
+
+        passengerFerry:
+            "عبّارة ركاب",
+
+        carFerry:
+            "عبّارة سيارات",
+
+        ownCar:
+            "سيارتي الخاصة",
+
+        ownEV:
+            "سيارتي الكهربائية الخاصة",
+
+        budgetStrategy:
+            "استراتيجية الميزانية",
+
+        bestCheapest:
+            "الأفضل + الأرخص",
+
+        customBudget:
+            "ميزانية مخصصة",
+
+        budgetTRY:
+            "الميزانية بالليرة التركية",
+
+        optional:
+            "اختياري",
+
+        minimumHotelRating:
+            "الحد الأدنى لتقييم الفندق",
+
+        hotelLocation:
+            "موقع الفندق",
+
+        cityCenter:
+            "وسط المدينة",
+
+        nearSea:
+            "بالقرب من البحر",
+
+        natureMountain:
+            "الطبيعة / الجبال",
+
+        quietArea:
+            "منطقة هادئة",
+
+        hotelAmenities:
+            "مرافق الفندق",
+
+        pool:
+            "مسبح",
+
+        spa:
+            "سبا",
+
+        beach:
+            "شاطئ",
+
+        aquapark:
+            "أكوابارك",
+
+        mealPlan:
+            "خطة الوجبات",
+
+        breakfastOnly:
+            "الإفطار فقط",
+
+        roomOnly:
+            "الغرفة فقط",
+
+        halfBoard:
+            "نصف إقامة",
+
+        fullBoard:
+            "إقامة كاملة",
+
+        allInclusive:
+            "شامل كليًا",
+
+        specialNotes:
+            "ملاحظات خاصة",
+
+        specialNotesPlaceholder:
+            "رحلة عائلية، أطعمة محلية، إلخ.",
+
+        search:
+            "ابحث وخطط",
+
+        searching:
+            "جارٍ البحث عن البيانات المباشرة...",
+
+        emptyState:
+            "أدخل متطلبات رحلتك ثم ابحث.",
+
+        loading:
+            "جارٍ البحث عن الفنادق والمطاعم والمعالم ووسائل النقل والطرق...",
+
+        travelPlan:
+            "خطة السفر",
+
+        total:
+            "الإجمالي",
+
+        dailyPlan:
+            "الخطة اليومية",
+
+        sources:
+            "المصادر",
+
+        recommendedHotel:
+            "الفندق المقترح",
+
+        noVerifiedHotel:
+            "لم يتم العثور على نتيجة فندق موثوقة.",
+
+        rating:
+            "التقييم",
+
+        reviews:
+            "التقييمات",
+
+        googleHotels:
+            "Google Hotels",
+
+        perRoomNight:
+            "للغرفة / الليلة",
+
+        openHotelSource:
+            "فتح مصدر الفندق",
+
+        transportTitle:
+            "وسيلة النقل",
+
+        routeChecked:
+            "تم التحقق من الطريق",
+
+        noVerifiedOperator:
+            "لا يوجد مشغل موثوق",
+
+        openTransportSource:
+            "فتح مصدر النقل",
+
+        hotelTransport:
+            "الفندق ↔ النقل",
+
+        stationToHotel:
+            "المحطة / المبنى → الفندق",
+
+        hotelToStation:
+            "الفندق → المحطة / المبنى",
+
+        duration:
+            "المدة",
+
+        distance:
+            "المسافة",
+
+        openGoogleMaps:
+            "فتح في خرائط Google",
+
+        day:
+            "اليوم",
+
+        lunch:
+            "الغداء",
+
+        dinner:
+            "العشاء",
+
+        breakfast:
+            "الإفطار",
+
+        ratingShort:
+            "التقييم",
+
+        source:
+            "المصدر",
+
+        place:
+            "المكان",
+
+        restaurant:
+            "المطعم",
+
+        noHotelCandidate:
+            "لم يتم إرجاع أي فندق من Google Hotels.",
+
+        noSpecificTransport:
+            "تعذر التحقق من شركة نقل محددة.",
+
+        priceUnavailable:
+            "لم يُرجع المزود السعر الإجمالي الحالي للفندق المختار. لم يتم اختراع أي سعر.",
+
+        transportPriceUnavailable:
+            "تم العثور على شركة النقل المختارة، ولكن لم يُرجع المزود سعر تذكرة حاليًا.",
+
+        noTicketPrice:
+            "تم العثور على المشغل، ولكن لم يتم إرجاع سعر التذكرة الحالي من البحث.",
+
+        differentPlaces:
+            "يجب أن تكون نقطة المغادرة والوجهة مختلفتين.",
+
+        chooseStartDate:
+            "يرجى اختيار تاريخ البدء.",
+
+        map:
+            "فتح في خرائط Google",
+
+        routeFeasible:
+            "يبدو أن الطريق ممكن، ولكن تعذر التحقق من مشغل محدد من نتائج البحث الحالية.",
+
+        noRoute:
+            "لم يتم العثور على طريق {mode} موثوق من {origin} إلى {destination}.",
+
+        missingHotelFeatures:
+            "لم تتوفر جميع مرافق الفندق المطلوبة معًا في نتائج البحث الموثوقة. اختار النظام أفضل تطابق عملي بدلًا من اختراع فندق.",
+
+        breakfastAccordingToMealPlan:
+            "الإفطار وفقًا لخطة الوجبات المختارة.",
+
+        lunchRecommended:
+            "الغداء في المطعم الموصى به والأعلى ترتيبًا.",
+
+        dinnerAccordingToMealPlan:
+            "العشاء وفقًا لخطة الوجبات المختارة.",
+
+        exactReturnTiming:
+            "يظهر وقت العودة الدقيق فقط عند توفر وقت مغادرة موثوق.",
+
+        hotelExplanation:
+            "اشرح سبب اختيار هذا الفندق اعتمادًا فقط على المعلومات المقدمة.",
+
+        transportExplanation:
+            "اشرح سبب اختيار وسيلة النقل هذه اعتمادًا فقط على المعلومات المقدمة.",
+
+        arrivalExplanation:
+            "اشرح انتقال الوصول باستخدام معلومات الطريق الموثوقة المقدمة فقط.",
+
+        departureExplanation:
+            "اشرح انتقال المغادرة باستخدام معلومات الطريق الموثوقة المقدمة فقط."
     }
 
-    document.body.dataset.mode =
-        mode;
+};
 
-    localStorage.setItem(
-        "voyageai-mode",
+
+function translate(
+    key,
+    replacements = {}
+) {
+
+    let text =
+        I18N[
+            state.lang
+        ]?.[
+            key
+        ]
+        ||
+        I18N.en[key]
+        ||
+        key;
+
+
+    Object.entries(
+        replacements
+    ).forEach(
+        ([name, value]) => {
+
+            text =
+                text.replaceAll(
+                    `{${name}}`,
+                    String(value)
+                );
+
+        }
+    );
+
+
+    return text;
+}
+
+
+function applyLanguage() {
+
+    document.documentElement.lang =
+        state.lang;
+
+    document.documentElement.dir =
+        state.lang === "ar"
+        ?
+            "rtl"
+        :
+            "ltr";
+
+
+    document
+        .querySelectorAll(
+            "[data-i18n]"
+        )
+        .forEach(
+            element => {
+
+                const key =
+                    element.dataset.i18n;
+
+                element.textContent =
+                    translate(key);
+
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            "[data-i18n-placeholder]"
+        )
+        .forEach(
+            element => {
+
+                const key =
+                    element.dataset.i18nPlaceholder;
+
+                element.placeholder =
+                    translate(key);
+
+            }
+        );
+
+
+    const langSelector =
+        $("langSelector");
+
+
+    if (langSelector) {
+
+        langSelector
+            .querySelector(
+                'option[value="tr"]'
+            )
+            .textContent =
+            translate(
+                "languageTurkish"
+            );
+
+        langSelector
+            .querySelector(
+                'option[value="en"]'
+            )
+            .textContent =
+            translate(
+                "languageEnglish"
+            );
+
+        langSelector
+            .querySelector(
+                'option[value="ar"]'
+            )
+            .textContent =
+            translate(
+                "languageArabic"
+            );
+    }
+
+
+    const themeLabels = {
+        midnight:
+            "themeMidnight",
+
+        ocean:
+            "themeOcean",
+
+        lavender:
+            "themeLavender",
+
+        sunset:
+            "themeSunset"
+    };
+
+
+    const themeSelector =
+        $("themeSelector");
+
+
+    if (themeSelector) {
+
+        Object.entries(
+            themeLabels
+        ).forEach(
+            ([value, key]) => {
+
+                const option =
+                    themeSelector.querySelector(
+                        `option[value="${value}"]`
+                    );
+
+                if (option) {
+
+                    option.textContent =
+                        translate(key);
+
+                }
+
+            }
+        );
+    }
+
+
+    const mode =
+        document.body.dataset.mode
+        || "dark";
+
+
+    updateModeText(
         mode
     );
 
 
-    const toggle =
-        $("modeToggle");
+    if (
+        state.currentData
+    ) {
+
+        render(
+            state.currentData
+        );
+
+    }
+}
+
+
+function updateModeText(
+    mode
+) {
 
     const icon =
         $("modeToggleIcon");
@@ -56,13 +1166,14 @@ function applyMode(mode) {
     const text =
         $("modeToggleText");
 
+    const toggle =
+        $("modeToggle");
+
 
     if (
+        !icon ||
+        !text ||
         !toggle
-        ||
-        !icon
-        ||
-        !text
     ) {
         return;
     }
@@ -80,7 +1191,9 @@ function applyMode(mode) {
 
     toggle.setAttribute(
         "aria-pressed",
-        String(isLight)
+        String(
+            isLight
+        )
     );
 
 
@@ -95,48 +1208,41 @@ function applyMode(mode) {
     text.textContent =
         isLight
         ?
-            "Bright"
+            translate("bright")
         :
-            "Dark";
+            translate("dark");
 }
 
 
-const I18N = {
+function applyMode(
+    mode
+) {
 
-    tr: {
-        search:
-            "Ara & Planla",
+    if (
+        mode !== "light"
+        &&
+        mode !== "dark"
+    ) {
 
-        searching:
-            "Canlı veriler aranıyor...",
+        mode = "dark";
 
-        map:
-            "Google Maps'te aç"
-    },
-
-    en: {
-        search:
-            "Search & Plan",
-
-        searching:
-            "Searching live data...",
-
-        map:
-            "Open in Google Maps"
-    },
-
-    ar: {
-        search:
-            "ابحث وخطط",
-
-        searching:
-            "جارٍ البحث المباشر...",
-
-        map:
-            "فتح في خرائط Google"
     }
 
-};
+
+    document.body.dataset.mode =
+        mode;
+
+
+    localStorage.setItem(
+        "voyageai-mode",
+        mode
+    );
+
+
+    updateModeText(
+        mode
+    );
+}
 
 
 const cities = [
@@ -280,9 +1386,7 @@ function fmtPrice(
         value === undefined
         ||
         Number.isNaN(
-            Number(
-                value
-            )
+            Number(value)
         )
     ) {
 
@@ -294,7 +1398,13 @@ function fmtPrice(
     return (
         Number(
             value
-        ).toLocaleString()
+        ).toLocaleString(
+            state.lang === "ar"
+            ?
+                "ar"
+            :
+                state.lang
+        )
         + " TRY"
     );
 }
@@ -341,7 +1451,7 @@ function sourceLinks(
                 >
                     ${esc(
                         item.title
-                        || "Source"
+                        || translate("source")
                     )}
                 </a>
                 `
@@ -516,12 +1626,15 @@ function renderHotel(
             <div class="card">
 
                 <h3>
-                    Recommended Hotel
+                    ${translate(
+                        "recommendedHotel"
+                    )}
                 </h3>
 
                 <p class="muted">
-                    No verified hotel result
-                    was returned.
+                    ${translate(
+                        "noVerifiedHotel"
+                    )}
                 </p>
 
             </div>
@@ -545,12 +1658,16 @@ function renderHotel(
 
                     <p class="muted">
 
-                        Rating:
+                        ${translate(
+                            "rating"
+                        )}:
                         ${hotel.rating ?? "—"}
 
                         ·
 
-                        Reviews:
+                        ${translate(
+                            "reviews"
+                        )}:
                         ${hotel.reviews ?? "—"}
 
                     </p>
@@ -559,7 +1676,9 @@ function renderHotel(
 
 
                 <span class="verified">
-                    ✓ Google Hotels
+                    ✓ ${translate(
+                        "googleHotels"
+                    )}
                 </span>
 
             </div>
@@ -607,7 +1726,10 @@ function renderHotel(
 
             <p class="muted">
 
-                Per room/night:
+                ${translate(
+                    "perRoomNight"
+                )}:
+
                 <strong>
                     ${fmtPrice(
                         hotel.price_per_room_per_night_try
@@ -619,7 +1741,10 @@ function renderHotel(
 
             <p class="price">
 
-                Total:
+                ${translate(
+                    "total"
+                )}:
+
                 ${fmtPrice(
                     hotel.total_hotel_cost_try
                 )}
@@ -641,7 +1766,9 @@ function renderHotel(
                         hotel.link
                     )}"
                 >
-                    Open hotel source
+                    ${translate(
+                        "openHotelSource"
+                    )}
                 </a>
                 `
 
@@ -689,7 +1816,9 @@ function renderTransport(
             <div class="row">
 
                 <h3>
-                    Transport
+                    ${translate(
+                        "transportTitle"
+                    )}
                 </h3>
 
                 ${
@@ -699,7 +1828,9 @@ function renderTransport(
 
                     `
                     <span class="verified">
-                        ✓ Route checked
+                        ✓ ${translate(
+                            "routeChecked"
+                        )}
                     </span>
                     `
 
@@ -728,7 +1859,9 @@ function renderTransport(
 
                 `
                 <h4>
-                    No verified operator
+                    ${translate(
+                        "noVerifiedOperator"
+                    )}
                 </h4>
                 `
             }
@@ -741,11 +1874,9 @@ function renderTransport(
 
                 `
                 <div class="warning">
-
                     ${esc(
                         transport.feasibility_warning
                     )}
-
                 </div>
                 `
 
@@ -777,9 +1908,9 @@ function renderTransport(
                 `
                 <div class="warning">
 
-                    The operator was found,
-                    but no current ticket price
-                    was returned by the search.
+                    ${translate(
+                        "noTicketPrice"
+                    )}
 
                 </div>
                 `
@@ -800,7 +1931,9 @@ function renderTransport(
                         transport.link
                     )}"
                 >
-                    Open transport source
+                    ${translate(
+                        "openTransportSource"
+                    )}
                 </a>
                 `
 
@@ -848,7 +1981,9 @@ function renderTransfers(
         <div class="card">
 
             <h3>
-                Hotel ↔ Transport
+                ${translate(
+                    "hotelTransport"
+                )}
             </h3>
 
 
@@ -861,20 +1996,25 @@ function renderTransfers(
                 <div class="item">
 
                     <strong>
-                        Station / terminal →
-                        hotel
+                        ${translate(
+                            "stationToHotel"
+                        )}
                     </strong>
 
                     <p class="muted">
 
-                        Duration:
+                        ${translate(
+                            "duration"
+                        )}:
                         ${esc(
                             transfer.to_hotel.duration
                         )}
 
                         ·
 
-                        Distance:
+                        ${translate(
+                            "distance"
+                        )}:
                         ${esc(
                             transfer.to_hotel.distance
                         )}
@@ -895,7 +2035,9 @@ function renderTransfers(
                                 transfer.to_hotel.link
                             )}"
                         >
-                            ${t().map}
+                            ${translate(
+                                "openGoogleMaps"
+                            )}
                         </a>
                         `
 
@@ -922,20 +2064,25 @@ function renderTransfers(
                 <div class="item">
 
                     <strong>
-                        Hotel →
-                        station / terminal
+                        ${translate(
+                            "hotelToStation"
+                        )}
                     </strong>
 
                     <p class="muted">
 
-                        Duration:
+                        ${translate(
+                            "duration"
+                        )}:
                         ${esc(
                             transfer.from_hotel.duration
                         )}
 
                         ·
 
-                        Distance:
+                        ${translate(
+                            "distance"
+                        )}:
                         ${esc(
                             transfer.from_hotel.distance
                         )}
@@ -956,7 +2103,9 @@ function renderTransfers(
                                 transfer.from_hotel.link
                             )}"
                         >
-                            ${t().map}
+                            ${translate(
+                                "openGoogleMaps"
+                            )}
                         </a>
                         `
 
@@ -1022,7 +2171,10 @@ function renderDay(
             <div class="row">
 
                 <h3>
-                    Day ${day.day_number}
+                    ${translate(
+                        "day"
+                    )}
+                    ${day.day_number}
                     —
                     ${esc(
                         day.day_title
@@ -1042,6 +2194,10 @@ function renderDay(
 
                 ${esc(
                     day.breakfast_banner
+                    ||
+                    translate(
+                        "breakfastAccordingToMealPlan"
+                    )
                 )}
 
             </div>
@@ -1089,7 +2245,10 @@ function renderDay(
 
                                 ·
 
-                                Rating:
+                                ${translate(
+                                    "ratingShort"
+                                )}:
+
                                 ${activity.rating ?? "—"}
 
                             </p>
@@ -1110,7 +2269,9 @@ function renderDay(
                                     )}"
                                 >
                                     📍
-                                    ${t().map}
+                                    ${translate(
+                                        "openGoogleMaps"
+                                    )}
                                 </a>
                                 `
 
@@ -1142,6 +2303,10 @@ function renderDay(
 
                                 ${esc(
                                     restaurant.meal_type
+                                    ||
+                                    translate(
+                                        "lunch"
+                                    )
                                 )}
 
                                 ·
@@ -1169,7 +2334,10 @@ function renderDay(
 
                                 ·
 
-                                Rating:
+                                ${translate(
+                                    "ratingShort"
+                                )}:
+
                                 ${restaurant.rating ?? "—"}
 
                             </p>
@@ -1190,7 +2358,9 @@ function renderDay(
                                     )}"
                                 >
                                     📍
-                                    ${t().map}
+                                    ${translate(
+                                        "openGoogleMaps"
+                                    )}
                                 </a>
                                 `
 
@@ -1410,6 +2580,11 @@ document.addEventListener(
                     state.lang =
                         event.target.value;
 
+                    localStorage.setItem(
+                        "voyageai-language",
+                        state.lang
+                    );
+
                     applyLanguage();
 
                 }
@@ -1445,10 +2620,6 @@ document.addEventListener(
         );
 
 
-        /* ====================================================
-           DARK / BRIGHT TOGGLE
-           ==================================================== */
-
         $("modeToggle")
             .addEventListener(
                 "click",
@@ -1483,6 +2654,29 @@ document.addEventListener(
         );
 
 
+        const savedLanguage =
+            localStorage.getItem(
+                "voyageai-language"
+            )
+            || "tr";
+
+
+        if (
+            I18N[
+                savedLanguage
+            ]
+        ) {
+
+            state.lang =
+                savedLanguage;
+
+        }
+
+
+        $("langSelector").value =
+            state.lang;
+
+
         $("hotel_min_rating")
             .addEventListener(
                 "input",
@@ -1511,7 +2705,9 @@ document.addEventListener(
                     ) {
 
                         alert(
-                            "Departure and destination must be different."
+                            translate(
+                                "differentPlaces"
+                            )
                         );
 
                         return;
@@ -1524,7 +2720,9 @@ document.addEventListener(
                     ) {
 
                         alert(
-                            "Please choose a start date."
+                            translate(
+                                "chooseStartDate"
+                            )
                         );
 
                         return;
@@ -1552,7 +2750,9 @@ document.addEventListener(
 
                     $("searchBtn")
                         .textContent =
-                        t().searching;
+                        translate(
+                            "searching"
+                        );
 
 
                     try {
@@ -1600,7 +2800,9 @@ document.addEventListener(
 
                         $("searchBtn")
                             .textContent =
-                            t().search;
+                            translate(
+                                "search"
+                            );
 
                     }
 

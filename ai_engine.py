@@ -50,6 +50,277 @@ class AIPlanError(Exception):
     pass
 
 
+# =========================================================
+# LANGUAGE / TRANSLATION HELPERS
+# =========================================================
+
+LANGUAGE_NAMES = {
+    "tr": "Turkish",
+    "en": "English",
+    "ar": "Arabic"
+}
+
+
+TRANSLATIONS = {
+
+    "en": {
+
+        "missing_hotel_features":
+            (
+                "Not all requested hotel features were "
+                "available together in the verified search "
+                "results. The system selected the "
+                "highest-ranked practical match instead "
+                "of inventing a hotel."
+            ),
+
+        "no_hotel_candidate":
+            (
+                "No hotel candidate was returned from "
+                "Google Hotels."
+            ),
+
+        "no_verified_transport":
+            (
+                "No specific transport company could "
+                "be verified."
+            ),
+
+        "route_feasible_unverified":
+            (
+                "The route appears feasible, but a "
+                "specific operator could not be verified "
+                "from the current search results."
+            ),
+
+        "hotel_price_missing":
+            (
+                "The selected hotel's current total price "
+                "was not returned by the provider. "
+                "No price was invented."
+            ),
+
+        "transport_price_missing":
+            (
+                "The selected transport company was found, "
+                "but a current ticket price was not returned "
+                "by the provider."
+            ),
+
+        "day_title":
+            "Day {day} in {destination}",
+
+        "breakfast":
+            (
+                "Breakfast according to the selected "
+                "meal plan."
+            ),
+
+        "lunch":
+            (
+                "Lunch at the recommended ranked restaurant."
+            ),
+
+        "dinner":
+            (
+                "Dinner according to the selected "
+                "meal plan."
+            ),
+
+        "return_timing":
+            (
+                "Exact return timing is shown only when "
+                "a verified departure time is available."
+            ),
+
+    },
+
+
+    "tr": {
+
+        "missing_hotel_features":
+            (
+                "İstenen tüm otel özellikleri doğrulanmış "
+                "arama sonuçlarında aynı anda bulunamadı. "
+                "Sistem bir otel uydurmak yerine en yüksek "
+                "sıralı pratik eşleşmeyi seçti."
+            ),
+
+        "no_hotel_candidate":
+            (
+                "Google Hotels'tan otel adayı döndürülmedi."
+            ),
+
+        "no_verified_transport":
+            (
+                "Belirli bir ulaşım şirketi doğrulanamadı."
+            ),
+
+        "route_feasible_unverified":
+            (
+                "Rota uygun görünüyor ancak mevcut arama "
+                "sonuçlarından belirli bir operatör doğrulanamadı."
+            ),
+
+        "hotel_price_missing":
+            (
+                "Seçilen otelin güncel toplam fiyatı sağlayıcı "
+                "tarafından döndürülmedi. Fiyat uydurulmadı."
+            ),
+
+        "transport_price_missing":
+            (
+                "Seçilen ulaşım şirketi bulundu ancak güncel "
+                "bilet fiyatı sağlayıcı tarafından döndürülmedi."
+            ),
+
+        "day_title":
+            "{destination} — {day}. Gün",
+
+        "breakfast":
+            (
+                "Seçilen yemek planına göre kahvaltı."
+            ),
+
+        "lunch":
+            (
+                "Önerilen sıralanmış restoranda öğle yemeği."
+            ),
+
+        "dinner":
+            (
+                "Seçilen yemek planına göre akşam yemeği."
+            ),
+
+        "return_timing":
+            (
+                "Kesin dönüş zamanı yalnızca doğrulanmış bir "
+                "kalkış saati mevcut olduğunda gösterilir."
+            ),
+
+    },
+
+
+    "ar": {
+
+        "missing_hotel_features":
+            (
+                "لم تتوفر جميع مرافق الفندق المطلوبة معًا "
+                "في نتائج البحث الموثوقة. اختار النظام أفضل "
+                "تطابق عملي بدلًا من اختراع فندق."
+            ),
+
+        "no_hotel_candidate":
+            (
+                "لم يتم إرجاع أي فندق من Google Hotels."
+            ),
+
+        "no_verified_transport":
+            (
+                "تعذر التحقق من شركة نقل محددة."
+            ),
+
+        "route_feasible_unverified":
+            (
+                "يبدو أن الطريق ممكن، ولكن تعذر التحقق من "
+                "مشغل محدد من نتائج البحث الحالية."
+            ),
+
+        "hotel_price_missing":
+            (
+                "لم يُرجع المزود السعر الإجمالي الحالي للفندق "
+                "المختار. لم يتم اختراع أي سعر."
+            ),
+
+        "transport_price_missing":
+            (
+                "تم العثور على شركة النقل المختارة، ولكن "
+                "لم يُرجع المزود سعر تذكرة حاليًا."
+            ),
+
+        "day_title":
+            "اليوم {day} في {destination}",
+
+        "breakfast":
+            (
+                "الإفطار وفقًا لخطة الوجبات المختارة."
+            ),
+
+        "lunch":
+            (
+                "الغداء في المطعم الموصى به والأعلى ترتيبًا."
+            ),
+
+        "dinner":
+            (
+                "العشاء وفقًا لخطة الوجبات المختارة."
+            ),
+
+        "return_timing":
+            (
+                "يظهر وقت العودة الدقيق فقط عند توفر وقت "
+                "مغادرة موثوق."
+            ),
+
+    }
+
+}
+
+
+def normalize_language(
+    value: Any
+) -> str:
+
+    language = (
+        str(value or "")
+        .strip()
+        .lower()
+    )
+
+    if language not in {
+        "tr",
+        "en",
+        "ar"
+    }:
+
+        return "en"
+
+    return language
+
+
+def tr(
+    language: str,
+    key: str,
+    **kwargs
+) -> str:
+
+    language = normalize_language(
+        language
+    )
+
+    text = (
+        TRANSLATIONS
+        .get(language, {})
+        .get(
+            key
+        )
+    )
+
+    if text is None:
+
+        text = (
+            TRANSLATIONS["en"]
+            .get(
+                key,
+                key
+            )
+        )
+
+    return text.format(
+        **kwargs
+    )
+
+
 class HybridEngine:
 
     def __init__(self):
@@ -68,6 +339,7 @@ class HybridEngine:
 
         # Gemini is optional.
         # Search results remain usable without it.
+
         if not GEMINI_KEY:
 
             return {}
@@ -97,7 +369,9 @@ class HybridEngine:
 
                 "responseMimeType":
                     "application/json"
+
             }
+
         }
 
 
@@ -114,11 +388,13 @@ class HybridEngine:
 
                     "x-goog-api-key":
                         GEMINI_KEY
+
                 },
 
                 json=payload,
 
                 timeout=90
+
             )
 
 
@@ -126,6 +402,7 @@ class HybridEngine:
 
             # Do not break the travel search
             # because optional AI is unavailable.
+
             return {}
 
 
@@ -158,7 +435,6 @@ class HybridEngine:
                     "text"
                 ]
             )
-
 
             return json.loads(
                 text
@@ -199,6 +475,13 @@ class HybridEngine:
         self,
         data: Dict[str, Any]
     ):
+
+        language = normalize_language(
+            data.get(
+                "language"
+            )
+        )
+
 
         start = date.fromisoformat(
             data[
@@ -245,6 +528,7 @@ class HybridEngine:
             )
 
             else []
+
         )
 
 
@@ -273,6 +557,7 @@ class HybridEngine:
             data[
                 "rooms_count"
             ]
+
         )
 
 
@@ -283,6 +568,7 @@ class HybridEngine:
             data[
                 "amenities"
             ]
+
         )
 
 
@@ -293,6 +579,7 @@ class HybridEngine:
             if ranked_hotels
 
             else None
+
         )
 
 
@@ -318,13 +605,9 @@ class HybridEngine:
                 < len(requested)
             ):
 
-                hotel_warning = (
-
-                    "Not all requested hotel features "
-                    "were available together in the "
-                    "verified search results. The system "
-                    "selected the highest-ranked practical "
-                    "match instead of inventing a hotel."
+                hotel_warning = tr(
+                    language,
+                    "missing_hotel_features"
                 )
 
 
@@ -344,6 +627,7 @@ class HybridEngine:
             ],
 
             "restaurants"
+
         )
 
 
@@ -369,6 +653,7 @@ class HybridEngine:
             ],
 
             "attractions"
+
         )
 
 
@@ -425,6 +710,7 @@ class HybridEngine:
 
             # First check whether the requested
             # transport type is actually possible.
+
             directions = self.search.directions(
 
                 (
@@ -440,6 +726,7 @@ class HybridEngine:
                 prefer=preference,
 
                 travel_mode="3"
+
             )
 
 
@@ -454,14 +741,13 @@ class HybridEngine:
 
                 transport_feasible = False
 
-                transport_warning = (
-
-                    f"No verified {transport_mode.lower()} "
-                    f"route was returned for "
-                    f"{data['origin']} → "
-                    f"{data['destination']}."
+                transport_warning = tr(
+                    language,
+                    "no_route",
+                    mode=transport_mode,
+                    origin=data["origin"],
+                    destination=data["destination"]
                 )
-
 
             if transport_feasible:
 
@@ -483,7 +769,9 @@ class HybridEngine:
                         ),
 
                         10
+
                     )
+
                 )
 
 
@@ -503,7 +791,9 @@ class HybridEngine:
                     "transport_plane",
 
                     10
+
                 )
+
             )
 
 
@@ -516,11 +806,10 @@ class HybridEngine:
 
             transport_ranked[0]
 
-            if (
-                transport_ranked
-            )
+            if transport_ranked
 
             else None
+
         )
 
 
@@ -534,12 +823,9 @@ class HybridEngine:
             }
         ):
 
-            transport_warning = (
-
-                "The route appears feasible, "
-                "but a specific operator could "
-                "not be verified from the current "
-                "search results."
+            transport_warning = tr(
+                language,
+                "route_feasible_unverified"
             )
 
 
@@ -560,15 +846,17 @@ class HybridEngine:
                     "address"
                 )
 
-                or selected_hotel.get(
+                or
+
+                selected_hotel.get(
                     "name"
                 )
-
                 + ", "
                 + data[
                     "destination"
                 ]
                 + ", Turkey"
+
             )
 
 
@@ -605,6 +893,7 @@ class HybridEngine:
                 transport_mode,
 
                 "main transport terminal "
+
             )
 
 
@@ -615,6 +904,7 @@ class HybridEngine:
                     "destination"
                 ]
                 + ", Turkey"
+
             )
 
 
@@ -629,6 +919,7 @@ class HybridEngine:
                 }
 
                 else None
+
             )
 
 
@@ -642,6 +933,7 @@ class HybridEngine:
                     prefer=preference,
 
                     travel_mode="3"
+
                 )
             )
 
@@ -656,6 +948,7 @@ class HybridEngine:
                     prefer=preference,
 
                     travel_mode="3"
+
                 )
             )
 
@@ -687,6 +980,7 @@ class HybridEngine:
             data[
                 "nights"
             ]
+
         )
 
 
@@ -701,6 +995,7 @@ class HybridEngine:
             day_pairs,
 
             start=1
+
         ):
 
             calendar_date = (
@@ -709,6 +1004,7 @@ class HybridEngine:
                 + timedelta(
                     days=day_number - 1
                 )
+
             ).isoformat()
 
 
@@ -782,6 +1078,7 @@ class HybridEngine:
                             "link",
                             ""
                         )
+
                 })
 
 
@@ -798,7 +1095,10 @@ class HybridEngine:
                         ],
 
                     "meal_type":
-                        "Lunch",
+                        tr(
+                            language,
+                            "lunch"
+                        ),
 
                     "restaurant_name":
                         restaurant[
@@ -854,6 +1154,7 @@ class HybridEngine:
                             "link",
                             ""
                         )
+
                 })
 
 
@@ -866,28 +1167,29 @@ class HybridEngine:
                     calendar_date,
 
                 "day_title":
-                    (
-                        f"Day {day_number} "
-                        f"in "
-                        f"{data['destination']}"
+                    tr(
+                        language,
+                        "day_title",
+                        day=day_number,
+                        destination=data["destination"]
                     ),
 
                 "breakfast_banner":
-                    (
-                        "Breakfast according to "
-                        "the selected meal plan."
+                    tr(
+                        language,
+                        "breakfast"
                     ),
 
                 "lunch_banner":
-                    (
-                        "Lunch at the recommended "
-                        "ranked restaurant."
+                    tr(
+                        language,
+                        "lunch"
                     ),
 
                 "dinner_banner":
-                    (
-                        "Dinner according to "
-                        "the selected meal plan."
+                    tr(
+                        language,
+                        "dinner"
                     ),
 
                 "activities":
@@ -895,6 +1197,7 @@ class HybridEngine:
 
                 "restaurants":
                     restaurant_results
+
             })
 
 
@@ -907,25 +1210,9 @@ class HybridEngine:
 
         if GEMINI_KEY:
 
-            language = {
-
-                "tr":
-                    "Turkish",
-
-                "en":
-                    "English",
-
-                "ar":
-                    "Arabic"
-
-            }.get(
-
-                data.get(
-                    "language"
-                ),
-
-                "English"
-            )
+            language_name = LANGUAGE_NAMES[
+                language
+            ]
 
 
             prompt = f"""
@@ -933,31 +1220,32 @@ class HybridEngine:
 You are the explanation and translation layer
 of VoyageAI.
 
-IMPORTANT:
-All data below was already collected from
-SerpApi.
+The user's selected language is:
+{language_name}
 
-You MUST NOT invent:
-- hotel names
-- restaurant names
-- attraction names
-- transport companies
-- prices
-- ratings
-- addresses
-- opening hours
-- routes
-- URLs
-- airport names
-- station names
+IMPORTANT RULES:
 
-You may only:
-1. Explain the supplied facts.
-2. Explain why the selected candidate ranked highly.
-3. Translate explanatory text into {language}.
-4. Organize the information into a clear travel plan.
+1. Return all explanatory prose in {language_name}.
+2. Keep the product name "VoyageAI" exactly as "VoyageAI".
+3. Do not translate or alter official proper names,
+   including actual hotel names, restaurant names,
+   attraction names, transport company names,
+   brand names, URLs, addresses, airport names,
+   and station names.
+4. Generic descriptive words may be translated.
+5. Do not invent factual information.
+6. Do not invent prices, ratings, reviews, addresses,
+   routes, opening hours, companies, or URLs.
+7. Use only the information supplied below.
+8. If information is unavailable, say so in {language_name}.
+9. Return valid JSON only.
 
-If information is missing, say it is unavailable.
+Your task is to:
+
+- explain why the hotel was selected;
+- explain why the transport was selected;
+- explain the arrival transfer;
+- explain the departure transfer.
 
 DATA:
 
@@ -989,15 +1277,15 @@ DATA:
 
 }, ensure_ascii=False)}
 
-Return JSON only:
+Return exactly this JSON structure:
 
 {{
     "hotel_explanation": "",
     "transport_explanation": "",
     "arrival_transfer_explanation": "",
-    "departure_transfer_explanation": "",
-    "daily_explanations": []
+    "departure_transfer_explanation": ""
 }}
+
 """
 
 
@@ -1023,9 +1311,10 @@ Return JSON only:
         if not selected_hotel:
 
             warnings.append(
-
-                "No hotel candidate was "
-                "returned from Google Hotels."
+                tr(
+                    language,
+                    "no_hotel_candidate"
+                )
             )
 
 
@@ -1046,9 +1335,10 @@ Return JSON only:
         ):
 
             warnings.append(
-
-                "No specific transport company "
-                "could be verified."
+                tr(
+                    language,
+                    "no_verified_transport"
+                )
             )
 
 
@@ -1061,10 +1351,10 @@ Return JSON only:
         ):
 
             warnings.append(
-
-                "The selected hotel's current "
-                "total price was not returned by "
-                "the provider. No price was invented."
+                tr(
+                    language,
+                    "hotel_price_missing"
+                )
             )
 
 
@@ -1077,10 +1367,10 @@ Return JSON only:
         ):
 
             warnings.append(
-
-                "The selected transport company "
-                "was found, but a current ticket price "
-                "was not returned by the provider."
+                tr(
+                    language,
+                    "transport_price_missing"
+                )
             )
 
 
@@ -1097,6 +1387,7 @@ Return JSON only:
             if selected_hotel
 
             else None
+
         )
 
 
@@ -1109,6 +1400,7 @@ Return JSON only:
             if selected_transport
 
             else None
+
         )
 
 
@@ -1120,6 +1412,7 @@ Return JSON only:
             hotel_total,
 
             transport_price
+
         ]
 
 
@@ -1133,6 +1426,7 @@ Return JSON only:
                 value,
                 (int, float)
             )
+
         ]
 
 
@@ -1168,6 +1462,7 @@ Return JSON only:
                     selected_hotel[
                         "link"
                     ]
+
             })
 
 
@@ -1189,6 +1484,7 @@ Return JSON only:
                         place[
                             "link"
                         ]
+
                 })
 
 
@@ -1210,6 +1506,7 @@ Return JSON only:
                         restaurant[
                             "link"
                         ]
+
                 })
 
 
@@ -1240,6 +1537,7 @@ Return JSON only:
                     selected_transport[
                         "link"
                     ]
+
             })
 
 
@@ -1281,7 +1579,6 @@ Return JSON only:
                 ],
 
             "total_travelers":
-
                 (
                     data[
                         "adults_count"
@@ -1401,6 +1698,7 @@ Return JSON only:
                         "hotel_explanation",
                         ""
                     )
+
             },
 
 
@@ -1468,6 +1766,7 @@ Return JSON only:
 
                 "feasibility_warning":
                     transport_warning
+
             },
 
 
@@ -1490,6 +1789,7 @@ Return JSON only:
                         "departure_transfer_explanation",
                         ""
                     )
+
             },
 
 
@@ -1515,11 +1815,11 @@ Return JSON only:
                     "",
 
                 "explanation":
-                    (
-                        "Exact return timing is shown "
-                        "only when a verified departure "
-                        "time is available."
+                    tr(
+                        language,
+                        "return_timing"
                     )
+
             },
 
 
@@ -1539,6 +1839,7 @@ Return JSON only:
 
                 "grand_total_try":
                     grand_total
+
             },
 
 
@@ -1568,12 +1869,14 @@ Return JSON only:
 
                 "places":
                     len(
-                       places
+                        places
                     ),
 
                 "transport":
                     len(
                         transport_candidates
                     )
+
             }
+
         }
