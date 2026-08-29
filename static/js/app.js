@@ -1548,15 +1548,22 @@ function collectPayload() {
         children_count:
             childrenCount,
 
-        child_age:
+        child_ages:
             childrenCount
             ?
-                Number(
-                    $("child_age").value
-                    || 1
+                [
+                    ...document.querySelectorAll(
+                        ".child-age-input"
+                    )
+                ].map(
+                    input =>
+                        Number(
+                            input.value
+                            || 1
+                        )
                 )
             :
-                null,
+                [],
 
         rooms_count:
             Number(
@@ -2553,21 +2560,69 @@ document.addEventListener(
                 "input",
                 () => {
 
-                    $("childAgeWrap")
-                        .classList
-                        .toggle(
-
-                            "hidden",
-
-                            Number(
-                                $("children_count")
-                                    .value
-                                ||
-                                0
-                            ) === 0
-
+                    const count =
+                        Number(
+                            $("children_count").value
+                            || 0
                         );
 
+                    const wrapper =
+                        $("childAgeWrap");
+
+                    wrapper.innerHTML = "";
+
+                    wrapper.classList.toggle(
+                       "hidden",
+                        count === 0
+                    );
+
+                    for (
+                        let index = 1;
+                        index <= count;
+                        index++
+                    ) {
+
+                        const label =
+                            document.createElement(
+                                "label"
+                            );
+
+                        label.textContent =
+                            `${translate("childAge")} ${index}`;
+
+                        const input =
+                            document.createElement(
+                                "input"
+                            );
+
+                        input.type =
+                            "number";
+
+                        input.min =
+                            "1";
+
+                        input.max =
+                            "17";
+
+                        input.value =
+                            "10";
+
+                        input.className =
+                            "input child-age-input";
+
+                        input.required =
+                            true;
+
+
+                        label.appendChild(
+                            input
+                        );
+
+                        wrapper.appendChild(
+                            label
+                        );
+
+                    }
                 }
             );
 

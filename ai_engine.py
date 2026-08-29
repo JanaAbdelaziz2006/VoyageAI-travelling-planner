@@ -509,28 +509,17 @@ class HybridEngine:
 
 
         child_ages = (
-
-            [
-                data[
-                    "child_age"
-                ]
-                for _ in range(
-                    children
-                )
-            ]
-
-            if (
-                children
-                and data.get(
-                    "child_age"
-                )
-                is not None
+            data.get(
+                "child_ages"
             )
-
-            else []
-
+            or []
         )
 
+        if len(child_ages) != children:
+            raise AIPlanError(
+                "The number of child ages must match "
+                "the number of children."
+            )
 
         # =====================================================
         # HOTELS

@@ -65,10 +65,8 @@ class TripRequest(BaseModel):
         le=8
     )
 
-    child_age: Optional[int] = Field(
-        default=None,
-        ge=1,
-        le=17
+    child_ages: List[int] = Field(
+        default_factory=list
     )
 
     rooms_count: int = Field(
