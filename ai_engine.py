@@ -666,56 +666,85 @@ class HybridEngine:
 
         directions_summary = None
 
+        # Booking providers are fixed trusted destinations.
+        # We deliberately do NOT use Google Search/SerpApi to discover
+        # transport booking websites, so random results can never appear.
+        transport_booking_links = {
+            "Bus": [
+                {
+                    "provider_name": "Obilet",
+                    "url": "https://www.obilet.com/"
+                }
+            ],
+            "Passenger Ferry": [
+                {
+                    "provider_name": "İDO",
+                    "url": "https://www.ido.com.tr/"
+                },
+                {
+                    "provider_name": "Obilet",
+                    "url": "https://www.obilet.com/"
+                }
+            ],
+            "Car Ferry": [
+                {
+                    "provider_name": "İDO",
+                    "url": "https://www.ido.com.tr/"
+                },
+                {
+                    "provider_name": "Obilet",
+                    "url": "https://www.obilet.com/"
+                }
+            ],
+            "Train": [
+                {
+                    "provider_name": "TCDD E-Bilet",
+                    "url": "https://ebilet.tcddtasimacilik.gov.tr/"
+                }
+            ],
+            "Plane": [
+                {
+                    "provider_name": "Pegasus",
+                    "url": "https://www.flypgs.com/en"
+                },
+                {
+                    "provider_name": "AJet",
+                    "url": "https://ajet.com/en-tr/flights"
+                },
+                {
+                    "provider_name": "Turkish Airlines",
+                    "url": "https://www.turkishairlines.com/en-tr/flights"
+                }
+            ]
+        }.get(
+            transport_mode,
+            []
+        )
 
+        # Keep the existing route-feasibility check for ground transport.
+        # This is a Maps/directions fact check, not a transport-booking search.
         if transport_mode in {
-
             "Bus",
             "Train",
             "Passenger Ferry",
             "Car Ferry"
-
         }:
 
             preference = {
-
-                "Bus":
-                    "bus",
-
-                "Train":
-                    "train",
-
-                "Passenger Ferry":
-                    None,
-
-                "Car Ferry":
-                    None
-
+                "Bus": "bus",
+                "Train": "train",
+                "Passenger Ferry": None,
+                "Car Ferry": None
             }.get(
                 transport_mode
             )
 
-
-            # First check whether the requested
-            # transport type is actually possible.
-
             directions = self.search.directions(
-
-                (
-                    data["origin"]
-                    + ", Turkey"
-                ),
-
-                (
-                    data["destination"]
-                    + ", Turkey"
-                ),
-
+                data["origin"] + ", Turkey",
+                data["destination"] + ", Turkey",
                 prefer=preference,
-
                 travel_mode="3"
-
             )
-
 
             directions_summary = (
                 self.search.directions_summary(
@@ -723,227 +752,102 @@ class HybridEngine:
                 )
             )
 
-
             if not directions_summary:
-
                 transport_feasible = False
-
                 transport_warning = ""
 
-
-            transport_candidates = (
-
-                self.search.google_search(
-
-                    (
-                        f"{data['origin']} to "
-                        f"{data['destination']} "
-                        f"{transport_mode} "
-                        f"{start.isoformat()} "
-                        "companies tickets"
-                    ),
-
-                    (
-                    "transport_"
-                    + transport_mode
-                    ),
-
-                    10
-
-                )
-            )
+        # There is intentionally no Google Search here. The selected
+        # provider is no longer a random search result.
+        selected_transport = None
 
 
-        elif transport_mode == "Plane":
+        # =====================================================
+        # HOTEL TRANSFER ROUTES — ONE PLAN PER HOTEL
+        # =====================================================
 
-            transport_candidates = (
+        hotel_transfer_plans = []
 
-                self.search.google_search(
-
-                    (
-                        f"{data['origin']} to "
-                        f"{data['destination']} "
-                        f"flight airlines "
-                        f"{start.isoformat()}"
-                    ),
-
-                    "transport_plane",
-
-                    10
-
-                )
-
-            )
-
-
-        transport_ranked = rank_transport(
-            transport_candidates
+        terminal_name = {
+            "Bus": "main intercity bus station ",
+            "Train": "main railway station ",
+            "Passenger Ferry": "passenger ferry terminal ",
+            "Car Ferry": "car ferry terminal ",
+            "Plane": "main airport "
+        }.get(
+            transport_mode,
+            "main transport terminal "
         )
 
-
-        selected_transport = (
-
-            transport_ranked[0]
-
-            if transport_ranked
-
-            else None
-
+        terminal_target = (
+            terminal_name
+            + data["destination"]
+            + ", Turkey"
         )
 
-
-        if (
-            transport_feasible
-            and not selected_transport
-            and transport_mode
-            not in {
-                "Own Car",
-                "Own EV"
+        preference = (
+            "bus,subway,train"
+            if transport_mode in {
+                "Bus",
+                "Train"
             }
-        ):
+            else None
+        )
 
-            transport_warning = tr(
-                language,
-                "route_feasible_unverified"
-            )
-
-
-        # =====================================================
-        # HOTEL TRANSFER ROUTES
-        # =====================================================
-
-        to_hotel = None
-
-        from_hotel = None
-
-
-        if selected_hotel:
+        for hotel in selected_hotels:
 
             hotel_target = (
-
-                selected_hotel.get(
-                    "address"
-                )
-
-                or
-
-                selected_hotel.get(
-                    "name"
-                )
-                + ", "
-                + data[
-                    "destination"
-                ]
-                + ", Turkey"
-
-            )
-
-
-            terminal_name = {
-
-                "Bus":
-                    (
-                        "main intercity bus "
-                        "station "
-                    ),
-
-                "Train":
-                    (
-                        "main railway station "
-                    ),
-
-                "Passenger Ferry":
-                    (
-                        "passenger ferry terminal "
-                    ),
-
-                "Car Ferry":
-                    (
-                        "car ferry terminal "
-                    ),
-
-                "Plane":
-                    (
-                        "main airport "
-                    )
-
-            }.get(
-
-                transport_mode,
-
-                "main transport terminal "
-
-            )
-
-
-            terminal_target = (
-
-                terminal_name
-                + data[
-                    "destination"
-                ]
-                + ", Turkey"
-
-            )
-
-
-            preference = (
-
-                "bus,subway,train"
-
-                if transport_mode
-                in {
-                    "Bus",
-                    "Train"
-                }
-
-                else None
-
-            )
-
-
-            to_hotel_data = (
-                self.search.directions(
-
-                    terminal_target,
-
-                    hotel_target,
-
-                    prefer=preference,
-
-                    travel_mode="3"
-
+                hotel.get("address")
+                or (
+                    hotel.get("name", "")
+                    + ", "
+                    + data["destination"]
+                    + ", Turkey"
                 )
             )
 
-
-            from_hotel_data = (
-                self.search.directions(
-
-                    hotel_target,
-
-                    terminal_target,
-
-                    prefer=preference,
-
-                    travel_mode="3"
-
-                )
+            to_hotel_data = self.search.directions(
+                terminal_target,
+                hotel_target,
+                prefer=preference,
+                travel_mode="3"
             )
 
-
-            to_hotel = (
-                self.search.directions_summary(
-                    to_hotel_data
-                )
+            from_hotel_data = self.search.directions(
+                hotel_target,
+                terminal_target,
+                prefer=preference,
+                travel_mode="3"
             )
 
-
-            from_hotel = (
-                self.search.directions_summary(
-                    from_hotel_data
-                )
+            hotel_to_terminal = self.search.directions_summary(
+                from_hotel_data
             )
+
+            terminal_to_hotel = self.search.directions_summary(
+                to_hotel_data
+            )
+
+            if terminal_to_hotel or hotel_to_terminal:
+                hotel_transfer_plans.append({
+                    "hotel_name": hotel.get("name", ""),
+                    "terminal": terminal_target,
+                    "to_hotel": terminal_to_hotel,
+                    "from_hotel": hotel_to_terminal
+                })
+
+        # Keep compatibility with the explanation layer by exposing the
+        # first hotel's transfer as the legacy single-transfer values.
+        to_hotel = (
+            hotel_transfer_plans[0].get("to_hotel")
+            if hotel_transfer_plans
+            else None
+        )
+
+        from_hotel = (
+            hotel_transfer_plans[0].get("from_hotel")
+            if hotel_transfer_plans
+            else None
+        )
 
 
         # =====================================================
@@ -1756,59 +1660,29 @@ Return exactly this JSON structure:
                 "verified_route":
                     bool(directions_summary),
 
+                "booking_links":
+                    transport_booking_links,
+
                 "company":
-                    (
-                        selected_transport.get(
-                            "company",
-                            ""
-                        )
-                        if selected_transport
-                        else ""
-                    ),
+                    "",
 
                 "title":
-                    (
-                        selected_transport.get(
-                            "title",
-                            ""
-                        )
-                        if selected_transport
-                        else ""
-                    ),
+                    "",
 
                 "snippet":
-                    (
-                        selected_transport.get(
-                            "snippet",
-                            ""
-                        )
-                        if selected_transport
-                        else ""
-                    ),
+                    "",
 
                 "price_try":
                     transport_price,
 
                 "link":
-                    (
-                        selected_transport.get(
-                            "link",
-                            ""
-                        )
-                        if selected_transport
-                        else ""
-                    ),
+                    "",
 
                 "verified_operator":
-                    bool(
-                        selected_transport
-                    ),
+                    False,
 
                 "why":
-                    ai.get(
-                        "transport_explanation",
-                        ""
-                    ),
+                    "",
 
                 "feasibility_warning":
                     transport_warning
@@ -1816,27 +1690,7 @@ Return exactly this JSON structure:
             },
 
 
-            "transfer_plan": {
-
-                "to_hotel":
-                    to_hotel,
-
-                "from_hotel":
-                    from_hotel,
-
-                "arrival_explanation":
-                    ai.get(
-                        "arrival_transfer_explanation",
-                        ""
-                    ),
-
-                "departure_explanation":
-                    ai.get(
-                        "departure_transfer_explanation",
-                        ""
-                    )
-
-            },
+            "transfer_plan": hotel_transfer_plans,
 
 
             "daily_schedule":

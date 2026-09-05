@@ -232,6 +232,9 @@ const I18N = {
         transportTitle:
             "Transport",
 
+        transportBookingMessage:
+            "You can check prices and make a reservation through these links.",
+
         routeChecked:
             "Route checked",
 
@@ -255,6 +258,9 @@ const I18N = {
 
         distance:
             "Distance",
+
+        terminal:
+            "Terminal",
 
         openGoogleMaps:
             "Open in Google Maps",
@@ -548,6 +554,9 @@ const I18N = {
         transportTitle:
             "Ulaşım",
 
+        transportBookingMessage:
+            "Fiyatları kontrol edebilir ve bu bağlantılar üzerinden rezervasyon yapabilirsiniz.",
+
         routeChecked:
             "Rota kontrol edildi",
 
@@ -571,6 +580,9 @@ const I18N = {
 
         distance:
             "Mesafe",
+
+        terminal:
+            "Terminal",
 
         openGoogleMaps:
             "Google Maps'te aç",
@@ -861,6 +873,9 @@ const I18N = {
         transportTitle:
             "وسيلة النقل",
 
+        transportBookingMessage:
+            "يمكنك التحقق من الأسعار وإجراء الحجز من خلال هذه الروابط.",
+
         routeChecked:
             "تم التحقق من الطريق",
 
@@ -884,6 +899,9 @@ const I18N = {
 
         distance:
             "المسافة",
+
+        terminal:
+            "المحطة / المبنى",
 
         openGoogleMaps:
             "فتح في خرائط Google",
@@ -1825,6 +1843,16 @@ function renderTransport(
         return "";
     }
 
+    const links =
+        Array.isArray(
+            transport.booking_links
+        )
+        ? transport.booking_links
+        : [];
+
+    if (!links.length) {
+        return "";
+    }
 
     return `
         <div class="card">
@@ -1837,147 +1865,38 @@ function renderTransport(
                     )}
                 </h3>
 
+            </div>
+
+            <p class="muted">
+                ${translate(
+                    "transportBookingMessage"
+                )}
+            </p>
+
+            <div class="links">
+
                 ${
-                    transport.verified_route
-
-                    ?
-
-                    `
-                    <span class="verified">
-                        ✓ ${translate(
-                            "routeChecked"
-                        )}
-                    </span>
-                    `
-
-                    :
-
-                    ""
+                    links
+                    .map(
+                        item => `
+                            <a
+                                class="primary-link"
+                                target="_blank"
+                                rel="noopener"
+                                href="${esc(
+                                    item.url
+                                )}"
+                            >
+                                ${esc(
+                                    item.provider_name
+                                )}
+                            </a>
+                        `
+                    )
+                    .join("")
                 }
 
             </div>
-
-
-            ${
-                transport.company
-
-                ?
-
-                `
-                <h4>
-                    ${esc(
-                        transport.company
-                    )}
-                </h4>
-                `
-
-                :
-
-                `
-                <h4>
-                    ${translate(
-                        "noVerifiedOperator"
-                    )}
-                </h4>
-                `
-            }
-
-
-            ${
-                transport.feasibility_warning
-
-                ?
-
-                `
-                <div class="warning">
-                    ${esc(
-                        transport.feasibility_warning
-                    )}
-                </div>
-                `
-
-                :
-
-                ""
-            }
-
-
-            ${
-                transport.price_try !== null
-                &&
-                transport.price_try !== undefined
-
-                ?
-
-                `
-                <p class="price">
-
-                    ${fmtPrice(
-                        transport.price_try
-                    )}
-
-                </p>
-                `
-
-                :
-
-                `
-                <div class="warning">
-
-                    ${translate(
-                        "noTicketPrice"
-                    )}
-
-                </div>
-                `
-            }
-
-
-            ${
-                transport.link
-
-                ?
-
-                `
-                <a
-                    class="primary-link"
-                    target="_blank"
-                    rel="noopener"
-                    href="${esc(
-                        transport.link
-                    )}"
-                >
-                    ${translate(
-                        "openTransportSource"
-                    )}
-                </a>
-                `
-
-                :
-
-                ""
-            }
-
-
-            ${
-                transport.why
-
-                ?
-
-                `
-                <div class="why">
-
-                    ${esc(
-                        transport.why
-                    )}
-
-                </div>
-                `
-
-                :
-
-                ""
-            }
 
         </div>
     `;
@@ -1985,195 +1904,154 @@ function renderTransport(
 
 
 function renderTransfers(
-    transfer
+    transfers
 ) {
 
-    if (!transfer) {
+    if (
+        !Array.isArray(
+            transfers
+        )
+        || !transfers.length
+    ) {
         return "";
     }
 
+    return transfers
+        .map(
+            transfer => `
+                <div class="card">
 
-    return `
-        <div class="card">
-
-            <h3>
-                ${translate(
-                    "hotelTransport"
-                )}
-            </h3>
-
-
-            ${
-                transfer.to_hotel
-
-                ?
-
-                `
-                <div class="item">
-
-                    <strong>
-                        ${translate(
-                            "stationToHotel"
+                    <h3>
+                        ${esc(
+                            transfer.hotel_name
+                            || "Hotel"
                         )}
-                    </strong>
+                        ↔
+                        ${translate(
+                            "transportTitle"
+                        )}
+                    </h3>
 
                     <p class="muted">
-
                         ${translate(
-                            "duration"
+                            "terminal"
                         )}:
                         ${esc(
-                            transfer.to_hotel.duration
+                            transfer.terminal
+                            || ""
                         )}
-
-                        ·
-
-                        ${translate(
-                            "distance"
-                        )}:
-                        ${esc(
-                            transfer.to_hotel.distance
-                        )}
-
                     </p>
 
                     ${
-                        transfer.to_hotel.link
+                        transfer.to_hotel
+                        ? `
+                            <div class="item">
 
-                        ?
+                                <strong>
+                                    ${translate(
+                                        "stationToHotel"
+                                    )}
+                                </strong>
 
+                                <p class="muted">
+                                    ${translate(
+                                        "duration"
+                                    )}:
+                                    ${esc(
+                                        transfer.to_hotel.duration
+                                    )}
+
+                                    ·
+
+                                    ${translate(
+                                        "distance"
+                                    )}:
+                                    ${esc(
+                                        transfer.to_hotel.distance
+                                    )}
+                                </p>
+
+                                ${
+                                    transfer.to_hotel.link
+                                    ? `
+                                        <a
+                                            class="map"
+                                            target="_blank"
+                                            rel="noopener"
+                                            href="${esc(
+                                                transfer.to_hotel.link
+                                            )}"
+                                        >
+                                            ${translate(
+                                                "openGoogleMaps"
+                                            )}
+                                        </a>
+                                    `
+                                    : ""
+                                }
+
+                            </div>
                         `
-                        <a
-                            class="map"
-                            target="_blank"
-                            rel="noopener"
-                            href="${esc(
-                                transfer.to_hotel.link
-                            )}"
-                        >
-                            ${translate(
-                                "openGoogleMaps"
-                            )}
-                        </a>
-                        `
-
-                        :
-
-                        ""
+                        : ""
                     }
-
-                </div>
-                `
-
-                :
-
-                ""
-            }
-
-
-            ${
-                transfer.from_hotel
-
-                ?
-
-                `
-                <div class="item">
-
-                    <strong>
-                        ${translate(
-                            "hotelToStation"
-                        )}
-                    </strong>
-
-                    <p class="muted">
-
-                        ${translate(
-                            "duration"
-                        )}:
-                        ${esc(
-                            transfer.from_hotel.duration
-                        )}
-
-                        ·
-
-                        ${translate(
-                            "distance"
-                        )}:
-                        ${esc(
-                            transfer.from_hotel.distance
-                        )}
-
-                    </p>
 
                     ${
-                        transfer.from_hotel.link
+                        transfer.from_hotel
+                        ? `
+                            <div class="item">
 
-                        ?
+                                <strong>
+                                    ${translate(
+                                        "hotelToStation"
+                                    )}
+                                </strong>
 
+                                <p class="muted">
+                                    ${translate(
+                                        "duration"
+                                    )}:
+                                    ${esc(
+                                        transfer.from_hotel.duration
+                                    )}
+
+                                    ·
+
+                                    ${translate(
+                                        "distance"
+                                    )}:
+                                    ${esc(
+                                        transfer.from_hotel.distance
+                                    )}
+                                </p>
+
+                                ${
+                                    transfer.from_hotel.link
+                                    ? `
+                                        <a
+                                            class="map"
+                                            target="_blank"
+                                            rel="noopener"
+                                            href="${esc(
+                                                transfer.from_hotel.link
+                                            )}"
+                                        >
+                                            ${translate(
+                                                "openGoogleMaps"
+                                            )}
+                                        </a>
+                                    `
+                                    : ""
+                                }
+
+                            </div>
                         `
-                        <a
-                            class="map"
-                            target="_blank"
-                            rel="noopener"
-                            href="${esc(
-                                transfer.from_hotel.link
-                            )}"
-                        >
-                            ${translate(
-                                "openGoogleMaps"
-                            )}
-                        </a>
-                        `
-
-                        :
-
-                        ""
+                        : ""
                     }
 
                 </div>
-                `
-
-                :
-
-                ""
-            }
-
-
-            ${
-                transfer.arrival_explanation
-
-                ?
-
-                `<p>
-                    ${esc(
-                        transfer.arrival_explanation
-                    )}
-                </p>`
-
-                :
-
-                ""
-            }
-
-
-            ${
-                transfer.departure_explanation
-
-                ?
-
-                `<p>
-                    ${esc(
-                        transfer.departure_explanation
-                    )}
-                </p>`
-
-                :
-
-                ""
-            }
-
-        </div>
-    `;
+            `
+        )
+        .join("");
 }
 
 
