@@ -561,14 +561,12 @@ class HybridEngine:
         )
 
 
+        selected_hotels = ranked_hotels[:3]
+
         selected_hotel = (
-
-            ranked_hotels[0]
-
-            if ranked_hotels
-
+            selected_hotels[0]
+            if selected_hotels
             else None
-
         )
 
 
@@ -1583,6 +1581,68 @@ Return exactly this JSON structure:
             "grand_total_trip_cost_try":
                 grand_total,
 
+            "hotels": [
+                {
+                    "name":
+                        hotel.get(
+                            "name",
+                            ""
+                        ),
+
+                    "rating":
+                        hotel.get(
+                            "rating"
+                        ),  
+
+                    "reviews":
+                        hotel.get(
+                            "reviews"
+                        ),
+
+                    "stars":
+                        hotel.get(
+                            "stars"
+                        ),
+
+                    "price_per_room_per_night_try":
+                        hotel.get(
+                            "price_per_night_try"
+                        ),
+
+                    "total_hotel_cost_try":
+                        hotel.get(
+                            "total_price_try"
+                        ),
+
+                    "amenities":
+                        hotel.get(
+                            "amenities",
+                            []
+                        ),
+
+                    "address":
+                        hotel.get(
+                            "address",
+                            ""
+                        ),
+
+                    "link":
+                        hotel.get(
+                            "link",
+                            ""
+                        ),
+
+                    "verified":
+                        True,
+
+                    "ranking_score":
+                        hotel.get(
+                            "ranking_score"
+                        )
+                }
+
+                for hotel in selected_hotels
+            ],
 
             "hotel": {
 

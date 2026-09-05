@@ -1623,11 +1623,21 @@ function renderHotel(
     hotel
 ) {
 
-    if (
-        !hotel
-        ||
-        !hotel.verified
-    ) {
+    const hotels =
+        Array.isArray(
+            state.currentData?.hotels
+        )
+        ?
+            state.currentData.hotels
+        :
+            hotel
+            ?
+                [hotel]
+            :
+                [];
+
+
+    if (!hotels.length) {
 
         return `
             <div class="card">
@@ -1650,161 +1660,160 @@ function renderHotel(
     }
 
 
-    return `
-        <div class="card">
+    return hotels
 
-            <div class="row">
+        .map(
+            (hotel, index) => `
 
-                <div>
+            <div class="card">
 
-                    <h3>
-                        ${esc(
-                            hotel.name
+                <div class="row">
+
+                    <div>
+
+                        <h3>
+                            ${esc(
+                                hotel.name
+                            )}
+                        </h3>
+
+                        <p class="muted">
+
+                            ${translate(
+                                "rating"
+                            )}:
+
+                            ${hotel.rating ?? "—"}
+
+                            ·
+
+                            ${translate(
+                                "reviews"
+                            )}:
+
+                            ${hotel.reviews ?? "—"}
+
+                        </p>
+
+                    </div>
+
+
+                    <span class="verified">
+
+                        ✓ ${translate(
+                            "googleHotels"
                         )}
-                    </h3>
 
-                    <p class="muted">
-
-                        ${translate(
-                            "rating"
-                        )}:
-                        ${hotel.rating ?? "—"}
-
-                        ·
-
-                        ${translate(
-                            "reviews"
-                        )}:
-                        ${hotel.reviews ?? "—"}
-
-                    </p>
+                    </span>
 
                 </div>
 
 
-                <span class="verified">
-                    ✓ ${translate(
-                        "googleHotels"
+                <p class="muted">
+
+                    ${esc(
+                        hotel.address
+                        || ""
                     )}
-                </span>
 
-            </div>
-
-
-            <p class="muted">
-
-                ${esc(
-                    hotel.address
-                    || ""
-                )}
-
-            </p>
+                </p>
 
 
-            <div class="chips">
+                <div class="chips">
+
+                    ${
+                        (
+                            hotel.amenities
+                            || []
+                        )
+
+                        .slice(
+                            0,
+                            12
+                        )
+
+                        .map(
+                            amenity =>
+                                `
+                                <span class="chip">
+
+                                    ${esc(
+                                        amenity
+                                    )}
+
+                                </span>
+                                `
+                        )
+
+                        .join("")
+                    }
+
+                </div>
+
+
+                <p class="muted">
+
+                    ${translate(
+                        "perRoomNight"
+                    )}:
+
+                    <strong>
+
+                        ${fmtPrice(
+                            hotel.price_per_room_per_night_try
+                        )}
+
+                    </strong>
+
+                </p>
+
+
+                <p class="price">
+
+                    ${translate(
+                        "total"
+                    )}:
+
+                    ${fmtPrice(
+                        hotel.total_hotel_cost_try
+                    )}
+
+                </p>
+
 
                 ${
-                    (
-                        hotel.amenities
-                        || []
-                    )
+                    hotel.link
 
-                    .slice(
-                        0,
-                        12
-                    )
+                    ?
 
-                    .map(
-                        amenity =>
-                            `
-                            <span class="chip">
-                                ${esc(
-                                    amenity
-                                )}
-                            </span>
-                            `
-                    )
+                    `
+                    <a
+                        class="primary-link"
+                        target="_blank"
+                        rel="noopener"
+                        href="${esc(
+                            hotel.link
+                        )}"
+                    >
 
-                    .join("")
+                        ${translate(
+                            "openHotelSource"
+                        )}
+
+                    </a>
+                    `
+
+                    :
+
+                    ""
                 }
 
             </div>
 
+        `
+        )
 
-            <p class="muted">
-
-                ${translate(
-                    "perRoomNight"
-                )}:
-
-                <strong>
-                    ${fmtPrice(
-                        hotel.price_per_room_per_night_try
-                    )}
-                </strong>
-
-            </p>
-
-
-            <p class="price">
-
-                ${translate(
-                    "total"
-                )}:
-
-                ${fmtPrice(
-                    hotel.total_hotel_cost_try
-                )}
-
-            </p>
-
-
-            ${
-                hotel.link
-
-                ?
-
-                `
-                <a
-                    class="primary-link"
-                    target="_blank"
-                    rel="noopener"
-                    href="${esc(
-                        hotel.link
-                    )}"
-                >
-                    ${translate(
-                        "openHotelSource"
-                    )}
-                </a>
-                `
-
-                :
-
-                ""
-            }
-
-
-            ${
-                hotel.why
-
-                ?
-
-                `
-                <div class="why">
-                    ${esc(
-                        hotel.why
-                    )}
-                </div>
-                `
-
-                :
-
-                ""
-            }
-
-        </div>
-    `;
+        .join("");
 }
 
 
