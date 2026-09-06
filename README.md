@@ -1,3 +1,9 @@
+**Photos of the Website's interface:**
+
+<img width="1918" height="837" alt="image" src="https://github.com/user-attachments/assets/f92a64d0-7161-4dc6-8916-f9107536930a" />
+
+
+
 # VoyageAI Hybrid Travel Planner 🌍✈️
 
 **VoyageAI** is a robust, intelligent, and flexible hybrid travel planning backend and web application built with **FastAPI**, **SerpApi**, and optional **Google Gemini AI**. It automatically searches real-time hotel listings, local attractions, top-rated restaurants, transport operators, and transit routes to generate comprehensive, data-driven, and customizable itineraries.
