@@ -1,6 +1,7 @@
 **Photos of the Website's interface:**
 
 <img width="1918" height="837" alt="image" src="https://github.com/user-attachments/assets/f92a64d0-7161-4dc6-8916-f9107536930a" />
+<img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/3eab7c13-da36-4ac1-8411-3c3f9d8b01d8" />
 
 
 
