@@ -9,6 +9,7 @@
 
 
 
+
 # VoyageAI Hybrid Travel Planner 🌍✈️
 
 **VoyageAI** is a robust, intelligent, and flexible hybrid travel planning backend and web application built with **FastAPI**, **SerpApi**, and optional **Google Gemini AI**. It automatically searches real-time hotel listings, local attractions, top-rated restaurants, transport operators, and transit routes to generate comprehensive, data-driven, and customizable itineraries.
