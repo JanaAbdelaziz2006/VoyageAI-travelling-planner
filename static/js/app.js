@@ -645,7 +645,7 @@ const I18N = {
             "İstenen tüm otel özellikleri doğrulanmış arama sonuçlarında aynı anda bulunamadı. Sistem bir otel uydurmak yerine en yüksek sıralı pratik eşleşmeyi seçti.",
 
         breakfastAccordingToMealPlan:
-            "Seçilen yemek planına göre kahvaltı.",
+            "Seçilen yemek planına göre kahvaltı otelde.",
 
         lunchRecommended:
             "Önerilen sıralanmış restoranda öğle yemeği.",

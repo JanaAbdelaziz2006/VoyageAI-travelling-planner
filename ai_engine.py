@@ -179,7 +179,7 @@ TRANSLATIONS = {
 
         "breakfast":
             (
-                "Seçilen yemek planına göre kahvaltı."
+                "Seçilen yemek planına göre kahvaltı otelde."
             ),
 
         "lunch":
