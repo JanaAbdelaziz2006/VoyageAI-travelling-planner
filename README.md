@@ -1,29 +1,3 @@
-**Photos of the Website's interface:**
-
-<img width="1918" height="837" alt="image" src="https://github.com/user-attachments/assets/f92a64d0-7161-4dc6-8916-f9107536930a" />
-<img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/9e42e26b-bf42-460b-b844-e32c9b1f8f40" />
-<img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/3eab7c13-da36-4ac1-8411-3c3f9d8b01d8" />
-<img width="1920" height="842" alt="image" src="https://github.com/user-attachments/assets/33dd3f00-0eed-4cae-baa1-193240bcef22" />
-<img width="1919" height="825" alt="image" src="https://github.com/user-attachments/assets/5e5f4efd-3167-4a30-9ad9-577e631715ac" />
-<img width="1892" height="831" alt="image" src="https://github.com/user-attachments/assets/a390bcdf-d7d0-4cd8-879a-3998c62e1d9c" />
-<img width="1920" height="812" alt="image" src="https://github.com/user-attachments/assets/7028220d-9532-4f1a-a76d-2c4b975b7ef9" />
-<img width="1920" height="813" alt="image" src="https://github.com/user-attachments/assets/63ca151b-a71a-4973-9a61-8c8b0d4a7d54" />
-<img width="1920" height="836" alt="image" src="https://github.com/user-attachments/assets/fde6d235-d703-40d9-abf5-36a45001a8af" />
-<img width="1920" height="826" alt="readme 1" src="https://github.com/user-attachments/assets/6506720d-b277-4750-80cc-565c2b2d2c06" />
-<img width="1919" height="828" alt="readme 2" src="https://github.com/user-attachments/assets/6dea9561-aaec-43ec-874b-c59df0f74248" />
-<img width="1885" height="828" alt="readme 3" src="https://github.com/user-attachments/assets/7c2343bd-8763-4f81-9c82-afdcf7b65718" />
-<img width="1915" height="809" alt="readme 4" src="https://github.com/user-attachments/assets/b0df1a8e-8e0d-4aad-98e7-12ef55cb375a" />
-
-
-
-
-
-
-
-
-
-
-
 # VoyageAI Hybrid Travel Planner 🌍✈️
 
 **VoyageAI** is a robust, intelligent, and flexible hybrid travel planning backend and web application built with **FastAPI**, **SerpApi**, and optional **Google Gemini AI**. It automatically searches real-time hotel listings, local attractions, top-rated restaurants, transport operators, and transit routes to generate comprehensive, data-driven, and customizable itineraries.
@@ -146,7 +120,7 @@ Generates a comprehensive trip plan based on user criteria.
 }
 ```
 
----
+
 
 ## 📦 Caching Mechanism
 To optimize API usage and reduce latency, `search_engine.py` implements a robust file-based caching system (`.cache/`) with SHA-256 hashed request parameters and configurable Time-To-Live (TTL) durations.
@@ -155,3 +129,23 @@ To optimize API usage and reduce latency, `search_engine.py` implements a robust
 
 ## 🛡️ License
 Distributed under the MIT License. See `LICENSE` for more information.
+
+
+
+---
+
+**Photos of the Website's interface:**
+
+<img width="1918" height="837" alt="image" src="https://github.com/user-attachments/assets/f92a64d0-7161-4dc6-8916-f9107536930a" />
+<img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/9e42e26b-bf42-460b-b844-e32c9b1f8f40" />
+<img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/3eab7c13-da36-4ac1-8411-3c3f9d8b01d8" />
+<img width="1920" height="842" alt="image" src="https://github.com/user-attachments/assets/33dd3f00-0eed-4cae-baa1-193240bcef22" />
+<img width="1919" height="825" alt="image" src="https://github.com/user-attachments/assets/5e5f4efd-3167-4a30-9ad9-577e631715ac" />
+<img width="1892" height="831" alt="image" src="https://github.com/user-attachments/assets/a390bcdf-d7d0-4cd8-879a-3998c62e1d9c" />
+<img width="1920" height="812" alt="image" src="https://github.com/user-attachments/assets/7028220d-9532-4f1a-a76d-2c4b975b7ef9" />
+<img width="1920" height="813" alt="image" src="https://github.com/user-attachments/assets/63ca151b-a71a-4973-9a61-8c8b0d4a7d54" />
+<img width="1920" height="836" alt="image" src="https://github.com/user-attachments/assets/fde6d235-d703-40d9-abf5-36a45001a8af" />
+<img width="1920" height="826" alt="readme 1" src="https://github.com/user-attachments/assets/6506720d-b277-4750-80cc-565c2b2d2c06" />
+<img width="1919" height="828" alt="readme 2" src="https://github.com/user-attachments/assets/6dea9561-aaec-43ec-874b-c59df0f74248" />
+<img width="1885" height="828" alt="readme 3" src="https://github.com/user-attachments/assets/7c2343bd-8763-4f81-9c82-afdcf7b65718" />
+<img width="1915" height="809" alt="readme 4" src="https://github.com/user-attachments/assets/b0df1a8e-8e0d-4aad-98e7-12ef55cb375a" />
