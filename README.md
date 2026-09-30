@@ -131,10 +131,12 @@ To optimize API usage and reduce latency, `search_engine.py` implements a robust
 Distributed under the MIT License. See `LICENSE` for more information.
 
 
-
 ---
 
-**Photos of the Website's interface:**
+
+
+
+## Photos of the Website's interface 🌍✈️:
 
 <img width="1918" height="837" alt="image" src="https://github.com/user-attachments/assets/f92a64d0-7161-4dc6-8916-f9107536930a" />
 <img width="1920" height="838" alt="image" src="https://github.com/user-attachments/assets/9e42e26b-bf42-460b-b844-e32c9b1f8f40" />
