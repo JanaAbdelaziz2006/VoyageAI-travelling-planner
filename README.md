@@ -163,6 +163,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <img width="1920" height="834" alt="readme 13" src="https://github.com/user-attachments/assets/1d2454e6-97de-4378-ae04-50e30fa4201b" />
 <img width="1920" height="838" alt="readme 14" src="https://github.com/user-attachments/assets/696983a4-135c-44ad-bc15-d6c154f76abb" />
 <img width="1920" height="838" alt="readme 15" src="https://github.com/user-attachments/assets/c4256b7c-d8a6-48ac-8a9d-b473e6b19f8d" />
+<img width="1920" height="829" alt="readme 16" src="https://github.com/user-attachments/assets/1913129f-e1eb-4485-8647-1bb7b5dbcaa7" />
 
 
 
